@@ -63,6 +63,7 @@ export const INITIAL_USERS = Array.from({ length: 80 }, (_, i) => {
   const codes = ins === "介護" ? SERVICE_CODES.kaigo : SERVICE_CODES.iryo;
   const sc = codes[i % codes.length];
   const pat = REGULAR_PATTERNS[i % REGULAR_PATTERNS.length];
+  const defaultStaffId = STAFF[i % STAFF.length].id;
   return {
     id: i + 1,
     name: `利用者${String(i + 1).padStart(3, "0")}`,
@@ -72,8 +73,14 @@ export const INITIAL_USERS = Array.from({ length: 80 }, (_, i) => {
     serviceCode: sc.code,
     serviceLabel: sc.label,
     frequency: pat.length,
-    regularSchedule: pat,
-    staffId: STAFF[i % STAFF.length].id,
+    regularSchedule: pat.map((p, idx) => {
+      const sid = STAFF[(i + idx) % STAFF.length].id;
+      const entryIns = idx % 3 === 0 ? ins : ins; // keep same insurance by default
+      const entryCodes = entryIns === "介護" ? SERVICE_CODES.kaigo : SERVICE_CODES.iryo;
+      const entrySc = entryCodes[(i + idx) % entryCodes.length];
+      return { ...p, staffId: sid, serviceCode: entrySc.code, serviceLabel: entrySc.label, insuranceType: entryIns };
+    }),
+    staffId: defaultStaffId,
     notes: i % 7 === 0 ? "独居・見守り強化" : i % 5 === 0 ? "医療処置あり" : "",
   };
 });
@@ -83,18 +90,22 @@ export function generateVisits(usersData) {
   let id = 1;
   usersData.forEach((u) => {
     u.regularSchedule.forEach((s) => {
+      const staffId = s.staffId ?? u.staffId;
+      const serviceCode = s.serviceCode ?? u.serviceCode;
+      const serviceLabel = s.serviceLabel ?? u.serviceLabel;
+      const insuranceType = s.insuranceType ?? u.insuranceType;
       v.push({
         id: id++,
-        staffId: u.staffId,
+        staffId,
         userId: u.id,
         userName: u.name,
         area: u.area,
         day: s.day,
         startHour: s.hour,
-        duration: u.insuranceType === "医療" ? 1.5 : 1,
-        type: u.serviceLabel.includes("理学") ? "リハビリ" : u.insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
-        serviceCode: u.serviceCode,
-        insuranceType: u.insuranceType,
+        duration: insuranceType === "医療" ? 1.5 : 1,
+        type: serviceLabel.includes("理学") ? "リハビリ" : insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
+        serviceCode,
+        insuranceType,
         status: "予定",
       });
     });

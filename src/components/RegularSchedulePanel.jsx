@@ -10,16 +10,34 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
   const [staffFilter, setStaffFilter] = useState("all");
   const [insFilter, setInsFilter] = useState("all");
 
-  // フィルタ適用
+  // フィルタ適用（エントリ単位でフィルタ）
   const filtered = users.filter((u) => {
-    if (staffFilter !== "all" && u.staffId !== Number(staffFilter)) return false;
-    if (insFilter !== "all" && u.insuranceType !== insFilter) return false;
+    if (insFilter !== "all") {
+      const hasMatchingEntry = u.regularSchedule.some((s) => (s.insuranceType ?? u.insuranceType) === insFilter);
+      if (!hasMatchingEntry) return false;
+    }
+    if (staffFilter !== "all") {
+      const hasMatchingEntry = u.regularSchedule.some((s) => (s.staffId ?? u.staffId) === Number(staffFilter));
+      if (!hasMatchingEntry) return false;
+    }
     return true;
   });
 
-  // 曜日×時間帯ごとに利用者をグループ化
-  const getSlotUsers = (day, hour) =>
-    filtered.filter((u) => u.regularSchedule.some((s) => s.day === day && s.hour === hour));
+  // 曜日×時間帯ごとにエントリを取得（ユーザー情報付き）
+  const getSlotEntries = (day, hour) => {
+    const entries = [];
+    filtered.forEach((u) => {
+      u.regularSchedule.forEach((s) => {
+        if (s.day !== day || s.hour !== hour) return;
+        const entryStaffId = s.staffId ?? u.staffId;
+        const entryIns = s.insuranceType ?? u.insuranceType;
+        if (staffFilter !== "all" && entryStaffId !== Number(staffFilter)) return;
+        if (insFilter !== "all" && entryIns !== insFilter) return;
+        entries.push({ ...s, user: u, staffId: entryStaffId, insuranceType: entryIns });
+      });
+    });
+    return entries;
+  };
 
   // 各セルの件数を計算（色分け用）
   const getSlotColor = (count) => {
@@ -100,8 +118,8 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
                   {h}:00
                 </div>
                 {DAYS.map((_, di) => {
-                  const slotUsers = getSlotUsers(di, h);
-                  const count = slotUsers.length;
+                  const slotEntries = getSlotEntries(di, h);
+                  const count = slotEntries.length;
                   const sc = getSlotColor(count);
                   return (
                     <div key={di} style={{
@@ -114,21 +132,21 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
                           {count}件
                         </div>
                       )}
-                      {slotUsers.slice(0, 4).map((u) => {
-                        const staff = STAFF.find((s) => s.id === u.staffId);
+                      {slotEntries.slice(0, 4).map((entry, idx) => {
+                        const entryStaff = STAFF.find((s) => s.id === entry.staffId);
                         return (
-                          <div key={u.id} style={{
+                          <div key={`${entry.user.id}-${idx}`} style={{
                             display: "flex", alignItems: "center", gap: 2,
                             padding: "1px 3px", borderRadius: 3, marginBottom: 1,
-                            background: "white", border: `1px solid ${staff?.color || "#e2e8f0"}20`,
+                            background: "white", border: `1px solid ${entryStaff?.color || "#e2e8f0"}20`,
                           }}>
-                            <span style={{ color: staff?.color, fontWeight: 700, fontSize: 8, flexShrink: 0 }}>
-                              {staff?.name.slice(0, 2)}
+                            <span style={{ color: entryStaff?.color, fontWeight: 700, fontSize: 8, flexShrink: 0 }}>
+                              {entryStaff?.name.slice(0, 2)}
                             </span>
                             <span style={{ color: "#475569", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {u.name}
+                              {entry.user.name}
                             </span>
-                            <InsBadge type={u.insuranceType} />
+                            <InsBadge type={entry.insuranceType} />
                           </div>
                         );
                       })}
@@ -151,8 +169,16 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
               {STAFF.filter((s) => staffFilter === "all" || s.id === Number(staffFilter)).map((s) => {
-                const staffUsers = filtered.filter((u) => u.staffId === s.id);
-                const totalVisits = staffUsers.reduce((sum, u) => sum + u.regularSchedule.length, 0);
+                // エントリ単位でカウント
+                let userCount = 0;
+                let totalEntries = 0;
+                filtered.forEach((u) => {
+                  const matchingEntries = u.regularSchedule.filter((e) => (e.staffId ?? u.staffId) === s.id);
+                  if (matchingEntries.length > 0) {
+                    userCount++;
+                    totalEntries += matchingEntries.length;
+                  }
+                });
                 return (
                   <div key={s.id} style={{
                     padding: "10px 14px", borderRadius: 8, background: `${s.color}06`,
@@ -168,8 +194,8 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>{s.role}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: s.color }}>{staffUsers.length}</div>
-                      <div style={{ fontSize: 9, color: "#94a3b8" }}>名 · 週{totalVisits}回</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: s.color }}>{userCount}</div>
+                      <div style={{ fontSize: 9, color: "#94a3b8" }}>名 · 週{totalEntries}回</div>
                     </div>
                   </div>
                 );

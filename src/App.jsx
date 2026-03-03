@@ -89,13 +89,19 @@ export default function App() {
     const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
     const newUser = { ...form, id: newId };
     setUsers((prev) => [...prev, newUser]);
-    const newVisits = form.regularSchedule.map((s, i) => ({
-      id: Date.now() + i, staffId: form.staffId, userId: newId, userName: form.name, area: form.area,
-      day: s.day, startHour: s.hour,
-      duration: form.insuranceType === "医療" ? 1.5 : 1,
-      type: form.serviceLabel.includes("理学") ? "リハビリ" : form.insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
-      serviceCode: form.serviceCode, insuranceType: form.insuranceType, status: "予定",
-    }));
+    const newVisits = form.regularSchedule.map((s, i) => {
+      const staffId = s.staffId ?? form.staffId;
+      const serviceCode = s.serviceCode ?? form.serviceCode;
+      const serviceLabel = s.serviceLabel ?? form.serviceLabel;
+      const insuranceType = s.insuranceType ?? form.insuranceType;
+      return {
+        id: Date.now() + i, staffId, userId: newId, userName: form.name, area: form.area,
+        day: s.day, startHour: s.hour,
+        duration: insuranceType === "医療" ? 1.5 : 1,
+        type: serviceLabel.includes("理学") ? "リハビリ" : insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
+        serviceCode, insuranceType, status: "予定",
+      };
+    });
     setVisits((prev) => [...prev, ...newVisits]);
     setAddUserOpen(false);
   };
@@ -104,13 +110,19 @@ export default function App() {
     setUsers((prev) => prev.map((u) => u.id === form.id ? { ...u, ...form } : u));
     setVisits((prev) => {
       const kept = prev.filter((v) => v.userId !== form.id);
-      const newVisits = form.regularSchedule.map((s, i) => ({
-        id: Date.now() + i, staffId: form.staffId, userId: form.id, userName: form.name, area: form.area,
-        day: s.day, startHour: s.hour,
-        duration: form.insuranceType === "医療" ? 1.5 : 1,
-        type: form.serviceLabel.includes("理学") ? "リハビリ" : form.insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
-        serviceCode: form.serviceCode, insuranceType: form.insuranceType, status: "予定",
-      }));
+      const newVisits = form.regularSchedule.map((s, i) => {
+        const staffId = s.staffId ?? form.staffId;
+        const serviceCode = s.serviceCode ?? form.serviceCode;
+        const serviceLabel = s.serviceLabel ?? form.serviceLabel;
+        const insuranceType = s.insuranceType ?? form.insuranceType;
+        return {
+          id: Date.now() + i, staffId, userId: form.id, userName: form.name, area: form.area,
+          day: s.day, startHour: s.hour,
+          duration: insuranceType === "医療" ? 1.5 : 1,
+          type: serviceLabel.includes("理学") ? "リハビリ" : insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
+          serviceCode, insuranceType, status: "予定",
+        };
+      });
       return [...kept, ...newVisits];
     });
     setViewUser(null);
