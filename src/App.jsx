@@ -13,7 +13,7 @@ const insColor = (ins) => ins === "医療"
 
 const fmtTime = (hour, dur) => {
   const em = hour + dur;
-  const mm = (h) => `${Math.floor(h)}:${(h % 1) * 60 || "00"}`;
+  const mm = (h) => `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, "0")}`;
   return `${mm(hour)}〜${mm(em)}`;
 };
 

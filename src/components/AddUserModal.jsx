@@ -3,8 +3,8 @@ import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, getCodeDuration } from ".
 import { InsBadge, Section } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
 
-const DURATION_OPTIONS = [0.5, 1, 1.5, 2];
-const fmtDur = (d) => d < 1 ? `${d * 60}分` : Number.isInteger(d) ? `${d}時間` : `${Math.floor(d)}時間${(d % 1) * 60}分`;
+const DURATION_OPTIONS = [1/3, 0.5, 2/3, 1, 1.5, 2];
+const fmtDur = (d) => d < 1 ? `${Math.round(d * 60)}分` : Number.isInteger(d) ? `${d}時間` : `${Math.floor(d)}時間${Math.round((d % 1) * 60)}分`;
 
 const EMPTY_USER = {
   name: "", address: "", area: "柏エリア",
