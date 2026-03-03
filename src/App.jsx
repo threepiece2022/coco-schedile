@@ -56,6 +56,7 @@ export default function App() {
   const [regSchedOpen, setRegSchedOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState("day");
   const [dayOff, setDayOff] = useState(0);
+  const [dayAdj, setDayAdj] = useState({}); // { "YYYY-M-D:visitId": { startHour, staffId } }
 
   const today = new Date();
   const mon = new Date(today);
@@ -69,6 +70,20 @@ export default function App() {
   selDate.setDate(today.getDate() + dayOff);
   const selDow = (selDate.getDay() + 6) % 7; // 0=月
   const selDateLabel = `${selDate.getFullYear()}年${selDate.getMonth() + 1}月${selDate.getDate()}日（${DAY_FULL[selDow]}）`;
+  const dateKey = `${selDate.getFullYear()}-${selDate.getMonth() + 1}-${selDate.getDate()}`;
+
+  // 日次ビュー：一時調整を反映した訪問リスト
+  const dayAllVisits = visits.filter((v) => (insF === "all" || v.insuranceType === insF) && v.day === selDow);
+  const dayAdjVisits = dayAllVisits.map((v) => {
+    const adj = dayAdj[`${dateKey}:${v.id}`];
+    return adj ? { ...v, startHour: adj.startHour, staffId: adj.staffId, _isAdj: true } : v;
+  });
+  const dayFilteredVisits = dayAdjVisits.filter((v) => {
+    if (viewMode === "staff" && selStaff) return v.staffId === selStaff;
+    if (viewMode === "user" && selUser) return v.userId === selUser;
+    return true;
+  });
+  const dateAdjCount = Object.keys(dayAdj).filter((k) => k.startsWith(`${dateKey}:`)).length;
 
   const fv = visits.filter((v) => {
     if (insF !== "all" && v.insuranceType !== insF) return false;
@@ -85,11 +100,37 @@ export default function App() {
   const onDS = useCallback((e, v) => { setDragV(v); e.dataTransfer.effectAllowed = "move"; }, []);
   const onDrop = useCallback((e, day, hour, sid) => {
     e.preventDefault(); if (!dragV) return;
-    setVisits((p) => p.map((v) => v.id === dragV.id ? { ...v, day, startHour: hour, ...(sid ? { staffId: sid } : {}) } : v));
+    if (calendarMode === "day") {
+      // 日次モード: 一時調整として保存（定期スケジュールは変更しない）
+      const d = new Date(); d.setDate(d.getDate() + dayOff);
+      const dk = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      setDayAdj((prev) => ({ ...prev, [`${dk}:${dragV.id}`]: { startHour: hour, staffId: sid || dragV.staffId } }));
+    } else {
+      // 週次モード: 定期スケジュールを直接変更
+      setVisits((p) => p.map((v) => v.id === dragV.id ? { ...v, day, startHour: hour, ...(sid ? { staffId: sid } : {}) } : v));
+    }
     setDragV(null);
-  }, [dragV]);
+  }, [dragV, calendarMode, dayOff]);
 
-  const save = () => { if (!editV) return; setVisits((p) => p.map((v) => v.id === editV.id ? editV : v)); setEditV(null); };
+  const save = () => {
+    if (!editV) return;
+    const { _isAdj, editPerm, ...cleanV } = editV;
+    if (calendarMode === "day" && !editPerm) {
+      // 一時変更: dayAdjに保存（定期スケジュールは変更しない）
+      const d = new Date(); d.setDate(d.getDate() + dayOff);
+      const dk = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      setDayAdj((prev) => ({ ...prev, [`${dk}:${cleanV.id}`]: { startHour: cleanV.startHour, staffId: cleanV.staffId } }));
+    } else {
+      // 定期変更: visitsを更新
+      setVisits((p) => p.map((v) => v.id === cleanV.id ? cleanV : v));
+      if (calendarMode === "day") {
+        const d = new Date(); d.setDate(d.getDate() + dayOff);
+        const dk = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        setDayAdj((prev) => { const n = { ...prev }; delete n[`${dk}:${cleanV.id}`]; return n; });
+      }
+    }
+    setEditV(null);
+  };
   const del = () => { if (!editV) return; setVisits((p) => p.filter((v) => v.id !== editV.id)); setEditV(null); };
   const getCell = (d, h, sid) => fv.filter((v) => v.day === d && v.startHour === h && (sid == null || v.staffId === sid));
 
@@ -281,6 +322,12 @@ export default function App() {
                 <button onClick={() => setDayOff(0)} style={{ ...navBtn, background: dayOff === 0 ? "#0f172a" : "white", color: dayOff === 0 ? "white" : "#1e293b", fontWeight: 600 }}>今日</button>
                 <button onClick={() => setDayOff((d) => d + 1)} style={navBtn}>▶</button>
                 <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 8 }}>{selDateLabel}</span>
+                {dateAdjCount > 0 && (
+                  <button onClick={() => setDayAdj((prev) => { const n = { ...prev }; Object.keys(n).forEach((k) => { if (k.startsWith(`${dateKey}:`)) delete n[k]; }); return n; })}
+                    style={{ padding: "3px 8px", border: "1px solid #fdba74", borderRadius: 6, background: "#fff7ed", cursor: "pointer", fontSize: 10, fontWeight: 600, color: "#ea580c", marginLeft: 4 }}>
+                    一時変更{dateAdjCount}件をリセット
+                  </button>
+                )}
               </>) : (<>
                 <button onClick={() => setWOff((w) => w - 1)} style={navBtn}>◀</button>
                 <button onClick={() => setWOff(0)} style={{ ...navBtn, background: wOff === 0 ? "#0f172a" : "white", color: wOff === 0 ? "white" : "#1e293b", fontWeight: 600 }}>今週</button>
@@ -341,7 +388,7 @@ export default function App() {
                 {/* ヘッダー: 空セル + スタッフ列 */}
                 <div style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }} />
                 {STAFF.map((s) => {
-                  const dayCt = fv.filter((v) => v.staffId === s.id && v.day === selDow).length;
+                  const dayCt = dayFilteredVisits.filter((v) => v.staffId === s.id).length;
                   const isSelected = selStaff === s.id;
                   return (
                     <div key={s.id} onClick={() => setSelStaff(selStaff === s.id ? null : s.id)}
@@ -356,7 +403,7 @@ export default function App() {
                 {HOURS.map((h) => (<>
                   <div key={`dt-${h}`} style={{ padding: "4px 4px", fontSize: 10, fontWeight: 600, color: "#94a3b8", borderBottom: "1px solid #f1f5f9", background: "#fafbfc", textAlign: "right", height: 56, boxSizing: "border-box" }}>{h}:00</div>
                   {STAFF.map((s) => {
-                    const cv = fv.filter((v) => v.day === selDow && v.startHour === h && v.staffId === s.id);
+                    const cv = dayFilteredVisits.filter((v) => v.startHour === h && v.staffId === s.id);
                     const isEmpty = cv.length === 0;
                     const isSelected = selStaff === s.id;
                     return (
@@ -369,8 +416,9 @@ export default function App() {
                           const isHighlighted = selUser && v.userId === selUser;
                           return (
                             <div key={v.id} style={{ position: "relative" }}>
-                              <VCard visit={v} staff={s} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={false} />
+                              <VCard visit={v} staff={s} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(vv) => setEditV({ ...vv, editPerm: false })} flexMode={false} />
                               {isHighlighted && <div style={{ position: "absolute", inset: 0, border: "2px solid #f59e0b", borderRadius: 6, pointerEvents: "none" }} />}
+                              {v._isAdj && <div style={{ position: "absolute", top: 1, right: 1, fontSize: 7, fontWeight: 700, color: "#ea580c", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 3, padding: "0 3px", lineHeight: "13px", pointerEvents: "none" }}>一時</div>}
                             </div>
                           );
                         })}
@@ -466,11 +514,19 @@ export default function App() {
                 <div><label style={lbl}>ステータス</label><select value={editV.status} onChange={(e) => setEditV({ ...editV, status: e.target.value })} style={sty}>{["予定", "確定", "完了", "キャンセル"].map((s) => <option key={s}>{s}</option>)}</select></div>
               </div>
             </div>
+            {calendarMode === "day" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, padding: "8px 10px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 6 }}>
+                <input type="checkbox" id="editPerm" checked={editV.editPerm || false} onChange={(e) => setEditV({ ...editV, editPerm: e.target.checked })}
+                  style={{ accentColor: "#d97706" }} />
+                <label htmlFor="editPerm" style={{ fontSize: 11, color: "#92400e", fontWeight: 600, cursor: "pointer" }}>定期スケジュールにも反映する</label>
+                <span style={{ fontSize: 9, color: "#b45309" }}>（未チェック＝この日のみ変更）</span>
+              </div>
+            )}
             <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
               <button onClick={del} style={{ padding: "8px 14px", border: "1px solid #fca5a5", background: "#fef2f2", color: "#dc2626", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>🗑 削除</button>
               <div style={{ flex: 1 }} />
               <button onClick={() => setEditV(null)} style={{ padding: "8px 14px", border: "1px solid #e2e8f0", background: "white", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#64748b" }}>キャンセル</button>
-              <button onClick={save} style={{ padding: "8px 14px", border: "none", background: "#0f172a", color: "white", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>✓ 保存</button>
+              <button onClick={save} style={{ padding: "8px 14px", border: "none", background: "#0f172a", color: "white", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>{calendarMode === "day" && !editV.editPerm ? "✓ この日のみ保存" : "✓ 保存"}</button>
             </div>
           </div>
         </div>
