@@ -12,6 +12,7 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode }) => {
   const m = visit.insuranceType === "医療";
   return (
     <div draggable onDragStart={(e) => onDS(e, visit)} onClick={() => onEdit(visit)}
+      title={`${visit.userName} ${visit.startHour}:00〜 ${getCodeShort(visit.serviceCode)}`}
       style={{
         ...(hMode
           ? { width: "100%", height: "100%" }
@@ -37,7 +38,7 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode }) => {
           <StBadge status={visit.status} />
         </div>
       )}
-      {hMode && (
+      {hMode && visit.duration >= 1 && (
         <div style={{ fontSize: 8, color: "#94a3b8", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getCodeShort(visit.serviceCode)}</div>
       )}
     </div>
@@ -320,7 +321,7 @@ export default function App() {
                 <div style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }} />
                 <div style={{ display: "grid", gridTemplateColumns: `repeat(${HOURS.length}, 1fr)`, borderBottom: "2px solid #e2e8f0" }}>
                   {HOURS.map((h) => (
-                    <div key={`dh-${h}`} style={{ textAlign: "center", padding: "8px 4px", borderLeft: "1px solid #f1f5f9", background: "#f8fafc", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{h}:00</div>
+                    <div key={`dh-${h}`} style={{ textAlign: "left", padding: "8px 4px", borderLeft: "1px solid #cbd5e1", background: "#f8fafc", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{h}:00</div>
                   ))}
                 </div>
                 {/* スタッフ行 */}
@@ -339,11 +340,13 @@ export default function App() {
                     </div>
                     <div style={{ position: "relative", height: 56, borderBottom: "1px solid #e2e8f0" }}>
                       {/* 時間グリッド線 + ドロップターゲット */}
-                      <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${HOURS.length}, 1fr)` }}>
-                        {HOURS.map((h) => (
+                      <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${HOURS.length * 2}, 1fr)` }}>
+                        {HOURS.flatMap((h) => [
                           <div key={`drop-${s.id}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
-                            style={{ borderLeft: "1px solid #f1f5f9", background: dragV ? "#f0fdf408" : "transparent" }} />
-                        ))}
+                            style={{ borderLeft: "1px solid #cbd5e1", background: dragV ? "#f0fdf408" : "transparent" }} />,
+                          <div key={`drop-${s.id}-${h}-half`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
+                            style={{ borderLeft: "1px dashed #e2e8f0", background: dragV ? "#f0fdf408" : "transparent" }} />,
+                        ])}
                       </div>
                       {/* 訪問カード（duration に応じた幅） */}
                       {staffVisits.map((v) => {
