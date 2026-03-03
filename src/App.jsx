@@ -79,7 +79,9 @@ export default function App() {
   const [regSchedOpen, setRegSchedOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState("day");
   const [dayOff, setDayOff] = useState(0);
-  const [dayAdj, setDayAdj] = useState({}); // { "YYYY-M-D:visitId": { startHour, staffId } }
+  const [dayAdj, setDayAdj] = useState(() => loadState("coco_dayAdj", {})); // { "YYYY-M-D:visitId": { startHour, staffId } }
+
+  useEffect(() => { localStorage.setItem("coco_dayAdj", JSON.stringify(dayAdj)); }, [dayAdj]);
 
   const today = new Date();
   const mon = new Date(today);
@@ -130,10 +132,16 @@ export default function App() {
   };
   const onDrop = useCallback((e, day, hour, sid) => {
     e.preventDefault(); if (!dragV) return;
-    // 常にvisitsを直接更新（localStorageに自動保存される）
-    setVisits((p) => p.map((v) => v.id === dragV.id ? { ...v, day, startHour: hour, ...(sid ? { staffId: sid } : {}) } : v));
+    if (calendarMode === "day") {
+      // 日次モード: 一時調整として保存（一時マーク付き、localStorageにも永続化）
+      const d = new Date(); d.setDate(d.getDate() + dayOff);
+      const dk = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      setDayAdj((prev) => ({ ...prev, [`${dk}:${dragV.id}`]: { startHour: hour, staffId: sid || dragV.staffId } }));
+    } else {
+      setVisits((p) => p.map((v) => v.id === dragV.id ? { ...v, day, startHour: hour, ...(sid ? { staffId: sid } : {}) } : v));
+    }
     setDragV(null); setDragPreview(null);
-  }, [dragV]);
+  }, [dragV, calendarMode, dayOff]);
 
   const save = () => {
     if (!editV) return;
