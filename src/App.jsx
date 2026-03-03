@@ -334,20 +334,31 @@ export default function App() {
                     <div key={`dh-${h}`} style={{ textAlign: "left", padding: "8px 4px", borderLeft: "1px solid #cbd5e1", background: "#f8fafc", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{h}:00</div>
                   ))}
                 </div>
-                {/* スタッフ行 */}
-                {STAFF.map((s) => {
-                  const dayCt = dayFilteredVisits.filter((v) => v.staffId === s.id).length;
-                  const staffVisits = dayFilteredVisits.filter((v) => v.staffId === s.id);
-                  const isSelected = selStaff === s.id;
-                  return (<>
-                    <div key={`sl-${s.id}`} onClick={() => setSelStaff(selStaff === s.id ? null : s.id)}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderBottom: "1px solid #e2e8f0", background: isSelected ? `${s.color}10` : "#f8fafc", cursor: "pointer" }}>
-                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${s.color}18`, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{s.name[0]}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: isSelected ? s.color : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
-                        <div style={{ fontSize: 9, color: "#94a3b8" }}>{dayCt}件</div>
+                {/* スタッフ行（グループ別） */}
+                {[
+                  { label: "看護師", members: STAFF.filter((s) => s.role === "看護師"), color: "#3b82f6" },
+                  { label: "リハビリ職", members: STAFF.filter((s) => s.role !== "看護師"), color: "#059669" },
+                ].map((group) => (<>
+                  {/* グループヘッダー */}
+                  <div key={`gh-${group.label}`} style={{ padding: "4px 8px", background: `${group.color}08`, borderBottom: "2px solid ${group.color}30", display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: group.color }} />
+                    <span style={{ fontSize: 10, fontWeight: 800, color: group.color }}>{group.label}</span>
+                    <span style={{ fontSize: 9, color: "#94a3b8" }}>{group.members.length}名</span>
+                  </div>
+                  <div style={{ background: `${group.color}05`, borderBottom: `2px solid ${group.color}20` }} />
+                  {group.members.map((s) => {
+                    const dayCt = dayFilteredVisits.filter((v) => v.staffId === s.id).length;
+                    const staffVisits = dayFilteredVisits.filter((v) => v.staffId === s.id);
+                    const isSelected = selStaff === s.id;
+                    return (<>
+                      <div key={`sl-${s.id}`} onClick={() => setSelStaff(selStaff === s.id ? null : s.id)}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderBottom: "1px solid #e2e8f0", background: isSelected ? `${group.color}10` : "#f8fafc", cursor: "pointer" }}>
+                        <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${group.color}18`, color: group.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{s.name[0]}</div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: isSelected ? group.color : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                          <div style={{ fontSize: 9, color: "#94a3b8" }}>{dayCt}件</div>
+                        </div>
                       </div>
-                    </div>
                     <div style={{ position: "relative", height: 56, borderBottom: "1px solid #e2e8f0" }}>
                       {/* 時間グリッド線 + ドロップターゲット */}
                       <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${HOURS.length * 2}, 1fr)` }}>
@@ -373,8 +384,9 @@ export default function App() {
                         );
                       })}
                     </div>
-                  </>);
-                })}
+                    </>);
+                  })}
+                </>))}
               </div>
             ) : (
               /* 週次ビュー（既存） */
