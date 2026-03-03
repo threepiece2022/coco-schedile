@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration, getCodeShort } from "./data.js";
 import { InsBadge, StBadge } from "./components/ui.jsx";
 import { lbl, sty, navBtn } from "./styles.js";
@@ -55,9 +55,16 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode, conflict }
   );
 };
 
+const loadState = (key, fallback) => {
+  try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
+};
+
 export default function App() {
-  const [users, setUsers] = useState(INITIAL_USERS);
-  const [visits, setVisits] = useState(() => generateVisits(INITIAL_USERS));
+  const [users, setUsers] = useState(() => loadState("coco_users", INITIAL_USERS));
+  const [visits, setVisits] = useState(() => loadState("coco_visits", null) || generateVisits(loadState("coco_users", INITIAL_USERS)));
+
+  useEffect(() => { localStorage.setItem("coco_users", JSON.stringify(users)); }, [users]);
+  useEffect(() => { localStorage.setItem("coco_visits", JSON.stringify(visits)); }, [visits]);
   const [viewMode, setViewMode] = useState("staff");
   const [selStaff, setSelStaff] = useState(null);
   const [selUser, setSelUser] = useState(null);
