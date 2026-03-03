@@ -49,7 +49,7 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode, conflict }
         </div>
       )}
       <div style={{ fontSize: 8, color: conflict ? "#dc2626" : "#94a3b8", fontWeight: 600, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {hMode ? `${visit.startHour}:00 ${getCodeShort(visit.serviceCode)}` : `${visit.startHour}:00〜`}
+        {hMode ? `${Math.floor(visit.startHour)}:${visit.startHour % 1 ? "30" : "00"} ${getCodeShort(visit.serviceCode)}` : `${Math.floor(visit.startHour)}:${visit.startHour % 1 ? "30" : "00"}〜`}
       </div>
     </div>
   );
@@ -365,7 +365,7 @@ export default function App() {
                         {HOURS.flatMap((h) => [
                           <div key={`drop-${s.id}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
                             style={{ borderLeft: "1px solid #cbd5e1", background: dragV ? "#f0fdf408" : "transparent" }} />,
-                          <div key={`drop-${s.id}-${h}-half`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
+                          <div key={`drop-${s.id}-${h}-half`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h + 0.5, s.id)}
                             style={{ borderLeft: "1px dashed #e2e8f0", background: dragV ? "#f0fdf408" : "transparent" }} />,
                         ])}
                       </div>
@@ -457,7 +457,7 @@ export default function App() {
                   <select value={editV.staffId} onChange={(e) => setEditV({ ...editV, staffId: Number(e.target.value) })} style={sty}>{STAFF.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div><label style={lbl}>曜日</label><select value={editV.day} onChange={(e) => setEditV({ ...editV, day: Number(e.target.value) })} style={sty}>{DAYS.map((d, i) => <option key={i} value={i}>{d}曜日</option>)}</select></div>
-                  <div><label style={lbl}>開始時間</label><select value={editV.startHour} onChange={(e) => setEditV({ ...editV, startHour: Number(e.target.value) })} style={sty}>{HOURS.map((h) => <option key={h} value={h}>{h}:00</option>)}</select></div>
+                  <div><label style={lbl}>開始時間</label><select value={editV.startHour} onChange={(e) => setEditV({ ...editV, startHour: Number(e.target.value) })} style={sty}>{HOURS.flatMap((h) => [<option key={h} value={h}>{h}:00</option>, <option key={h + 0.5} value={h + 0.5}>{h}:30</option>])}</select></div>
                 </div>
                 <div><label style={lbl}>サービスコード</label>
                   <select value={editV.serviceCode} onChange={(e) => { const sc = ALL_CODES.find((c) => c.code === e.target.value); setEditV({ ...editV, serviceCode: e.target.value, insuranceType: sc?.insurance || editV.insuranceType }); }} style={sty}>
