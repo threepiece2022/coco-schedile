@@ -11,29 +11,37 @@ const insColor = (ins) => ins === "医療"
   ? { bg: "#fffbeb", border: "#f59e0b", text: "#92400e", left: "#d97706" }
   : { bg: "#eff6ff", border: "#93c5fd", text: "#1e40af", left: "#3b82f6" };
 
-const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode }) => {
+const fmtTime = (hour, dur) => {
+  const em = hour + dur;
+  const mm = (h) => `${Math.floor(h)}:${(h % 1) * 60 || "00"}`;
+  return `${mm(hour)}〜${mm(em)}`;
+};
+
+const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode, conflict }) => {
   const h = visit.duration * 56 - 4;
   const ic = insColor(visit.insuranceType);
   return (
     <div draggable onDragStart={(e) => onDS(e, visit)} onClick={() => onEdit(visit)}
-      title={`${visit.userName} ${visit.startHour}:00〜 ${getCodeShort(visit.serviceCode)}`}
+      title={`${visit.userName} ${fmtTime(visit.startHour, visit.duration)} ${getCodeShort(visit.serviceCode)}`}
       style={{
         ...(hMode
           ? { width: "100%", height: "100%" }
           : flexMode
             ? { flex: "1 1 0", minWidth: 0, height: h }
             : { position: "absolute", top: 2, left: 2, right: 2, height: h }),
-        background: ic.bg,
-        border: `1px solid ${ic.border}`, borderLeft: `3px solid ${ic.left}`,
+        background: conflict ? "#fef2f2" : ic.bg,
+        border: conflict ? "2px solid #ef4444" : `1px solid ${ic.border}`,
+        borderLeft: conflict ? "3px solid #dc2626" : `3px solid ${ic.left}`,
         borderRadius: 6, padding: "3px 6px", cursor: "grab", opacity: isDrag ? 0.35 : 1,
         transition: "box-shadow 0.15s, transform 0.15s", overflow: "hidden", zIndex: isDrag ? 100 : 1, fontSize: 11,
         boxSizing: "border-box",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 2px 8px ${ic.border}50`; e.currentTarget.style.transform = "scale(1.02)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 2px 8px ${conflict ? "#ef444450" : ic.border + "50"}`; e.currentTarget.style.transform = "scale(1.02)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "scale(1)"; }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 3, lineHeight: 1.3 }}>
-        <span style={{ fontWeight: 700, color: ic.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: flexMode ? 9 : 11 }}>{flexMode ? visit.userName.slice(-3) : visit.userName}</span>
+        <span style={{ fontSize: 8, color: conflict ? "#dc2626" : "#94a3b8", fontWeight: 600, flexShrink: 0 }}>{visit.startHour}:00</span>
+        <span style={{ fontWeight: 700, color: conflict ? "#dc2626" : ic.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: flexMode ? 9 : 11 }}>{flexMode ? visit.userName.slice(-3) : visit.userName}</span>
       </div>
       {!flexMode && !hMode && visit.duration >= 1 && (
         <div style={{ display: "flex", gap: 3, alignItems: "center", marginTop: 2 }}>
@@ -356,9 +364,10 @@ export default function App() {
                         const left = ((v.startHour - HOURS[0]) / HOURS.length) * 100;
                         const width = (v.duration / HOURS.length) * 100;
                         const isHighlighted = selUser && v.userId === selUser;
+                        const conflict = staffVisits.some((o) => o.id !== v.id && o.startHour < v.startHour + v.duration && o.startHour + o.duration > v.startHour);
                         return (
                           <div key={v.id} style={{ position: "absolute", left: `${left}%`, width: `${width}%`, top: 2, bottom: 2, padding: "0 1px", boxSizing: "border-box", zIndex: 2 }}>
-                            <VCard visit={v} staff={s} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(vv) => setEditV({ ...vv, editPerm: false })} hMode />
+                            <VCard visit={v} staff={s} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(vv) => setEditV({ ...vv, editPerm: false })} hMode conflict={conflict} />
                             {isHighlighted && <div style={{ position: "absolute", inset: "0 1px", border: "2px solid #f59e0b", borderRadius: 6, pointerEvents: "none" }} />}
                             {v._isAdj && <div style={{ position: "absolute", top: 1, right: 3, fontSize: 7, fontWeight: 700, color: "#ea580c", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 3, padding: "0 3px", lineHeight: "13px", pointerEvents: "none", zIndex: 3 }}>一時</div>}
                           </div>
