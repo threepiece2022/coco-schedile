@@ -52,7 +52,6 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [wOff, setWOff] = useState(0);
   const [insF, setInsF] = useState("all");
-  const [showAvail, setShowAvail] = useState(true);
   const [regSchedOpen, setRegSchedOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState("day");
   const [dayOff, setDayOff] = useState(0);
@@ -185,52 +184,21 @@ export default function App() {
 
   const dayDow = calendarMode === "day" ? selDow : todayDow;
   const tVis = visits.filter((v) => v.day === dayDow).length;
-  const kC = visits.filter((v) => v.insuranceType === "介護").length;
-  const iC = visits.filter((v) => v.insuranceType === "医療").length;
-
-  // 空きスタッフ数（現在時間帯）
-  const nowHour = today.getHours();
-  const freeNow = STAFF.filter((s) => visits.filter((v) => v.staffId === s.id && v.day === todayDow && v.startHour === nowHour && v.status !== "キャンセル").length === 0).length;
 
   return (
     <div style={{ fontFamily: "'Noto Sans JP','Hiragino Sans',sans-serif", background: "#f8fafc", minHeight: "100vh", color: "#1e293b" }}>
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg, #0f172a, #1e3a5f)", color: "white", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg, #38bdf8, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏥</div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 1 }}>訪問看護スケジュール管理</div>
-            <div style={{ fontSize: 10, opacity: 0.6 }}>スリーピース株式会社</div>
-          </div>
+      <div style={{ background: "#0f172a", color: "white", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 1 }}>訪問看護スケジュール管理</div>
+          <span style={{ fontSize: 10, opacity: 0.5 }}>スリーピース株式会社</span>
         </div>
-        <div style={{ display: "flex", gap: 10, fontSize: 12, alignItems: "center" }}>
-          {[
-            { v: tVis, l: calendarMode === "day" && dayOff !== 0 ? "選択日" : "本日" },
-            { v: visits.length, l: "今週合計" },
-            { v: kC, l: "介護保険", c: "#93c5fd" },
-            { v: iC, l: "医療保険", c: "#fcd34d" },
-          ].map((s, i) => (
-            <div key={i} style={{ textAlign: "center", padding: "4px 12px", background: "rgba(255,255,255,0.1)", borderRadius: 8, borderBottom: s.c ? `2px solid ${s.c}` : "none" }}>
-              <div style={{ fontSize: 17, fontWeight: 800 }}>{s.v}</div>
-              <div style={{ opacity: 0.7, fontSize: 9 }}>{s.l}</div>
-            </div>
-          ))}
-          {/* 空き状況ボタン */}
-          <button onClick={() => setAvailOpen(true)}
-            style={{
-              padding: "8px 16px", border: "none", borderRadius: 8, cursor: "pointer",
-              background: freeNow >= 4 ? "linear-gradient(135deg, #059669, #10b981)" : freeNow >= 2 ? "linear-gradient(135deg, #d97706, #f59e0b)" : "linear-gradient(135deg, #dc2626, #ef4444)",
-              color: "white", fontWeight: 700, fontSize: 12,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
-            }}>
-            <span style={{ fontSize: 16, fontWeight: 800 }}>🟢 {freeNow}/{STAFF.length}</span>
-            <span style={{ fontSize: 9, opacity: 0.9 }}>現在空き</span>
-          </button>
+        <div style={{ fontSize: 11, opacity: 0.6 }}>
+          {calendarMode === "day" && dayOff !== 0 ? "選択日" : "本日"} {tVis}件 / 週 {visits.length}件
         </div>
       </div>
 
-      <div style={{ display: "flex", height: "calc(100vh - 72px)" }}>
+      <div style={{ display: "flex", height: "calc(100vh - 42px)" }}>
         {/* Sidebar */}
         <div style={{ width: 240, background: "white", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <div style={{ padding: "10px 10px 6px", borderBottom: "1px solid #f1f5f9" }}>
@@ -255,35 +223,17 @@ export default function App() {
               <button onClick={() => setSelStaff(null)} style={{ width: "100%", padding: "7px 10px", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left", fontSize: 12, fontWeight: 600, marginBottom: 4, background: !selStaff ? "#eff6ff" : "transparent", color: !selStaff ? "#1d4ed8" : "#64748b" }}>📋 全スタッフ表示</button>
               {STAFF.map((s) => {
                 const ct = visits.filter((v) => v.staffId === s.id).length;
-                const kk = visits.filter((v) => v.staffId === s.id && v.insuranceType === "介護").length;
-                const ii = visits.filter((v) => v.staffId === s.id && v.insuranceType === "医療").length;
-                // スタッフの空き枠数
-                const busySlots = new Set(visits.filter((v) => v.staffId === s.id && v.status !== "キャンセル").map((v) => `${v.day}-${v.startHour}`));
-                const totalSlots = HOURS.length * 5; // 平日のみ
-                const freeSlots = totalSlots - busySlots.size;
                 return (
                   <button key={s.id} onClick={() => setSelStaff(s.id)}
-                    style={{ width: "100%", padding: "7px 10px", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left", marginBottom: 2, background: selStaff === s.id ? `${s.color}10` : "transparent", borderLeft: selStaff === s.id ? `3px solid ${s.color}` : "3px solid transparent" }}>
+                    style={{ width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left", marginBottom: 2, background: selStaff === s.id ? `${s.color}10` : "transparent", borderLeft: selStaff === s.id ? `3px solid ${s.color}` : "3px solid transparent" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${s.color}18`, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{s.name[0]}</div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
-                        <div style={{ fontSize: 9, color: "#94a3b8", display: "flex", gap: 4 }}>
-                          <span>{ct}件</span>
-                          <span style={{ color: "#3b82f6" }}>介{kk}</span>
-                          <span style={{ color: "#d97706" }}>医{ii}</span>
-                          <span style={{ color: "#059669", fontWeight: 700 }}>空{freeSlots}</span>
-                        </div>
-                      </div>
+                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${s.color}18`, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{s.name[0]}</div>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "#1e293b", flex: 1 }}>{s.name}</span>
+                      <span style={{ fontSize: 9, color: "#94a3b8" }}>{ct}件</span>
                     </div>
                   </button>
                 );
               })}
-              {/* 空き状況ボタン（サイドバー下部） */}
-              <button onClick={() => setAvailOpen(true)}
-                style={{ width: "100%", padding: "10px", border: "2px dashed #86efac", borderRadius: 8, cursor: "pointer", background: "#ecfdf5", color: "#059669", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
-                📊 空き状況を一覧表示
-              </button>
             </div>
           ) : (
             <div style={{ flex: 1, overflowY: "auto", padding: 8 }}>
@@ -341,42 +291,17 @@ export default function App() {
                 ))}
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 11, color: "#64748b" }}>
-                表示: {fv.length}件
-                {selStaff && ` · ${STAFF.find((s) => s.id === selStaff)?.name}`}
-                {selUser && ` · ${users.find((u) => u.id === selUser)?.name}`}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                {fv.length}件{selStaff ? ` · ${STAFF.find((s) => s.id === selStaff)?.name}` : ""}{selUser ? ` · ${users.find((u) => u.id === selUser)?.name}` : ""}
               </span>
-              {showAvail && !selStaff && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9 }}>
-                  {[
-                    { bg: "#f0fdf4", color: "#16a34a", label: "余裕" },
-                    { bg: "#fefce8", color: "#ca8a04", label: "やや混" },
-                    { bg: "#fff7ed", color: "#ea580c", label: "混雑" },
-                    { bg: "#fef2f2", color: "#dc2626", label: "逼迫" },
-                  ].map((l) => (
-                    <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <div style={{ width: 10, height: 10, borderRadius: 2, background: l.bg, border: `1px solid ${l.color}30` }} />
-                      <span style={{ color: l.color, fontWeight: 600 }}>{l.label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <button onClick={() => setShowAvail((v) => !v)}
-                style={{
-                  padding: "4px 10px", border: `1.5px solid ${showAvail ? "#86efac" : "#e2e8f0"}`, borderRadius: 6,
-                  background: showAvail ? "#ecfdf5" : "white", cursor: "pointer", fontSize: 11, fontWeight: 600,
-                  color: showAvail ? "#059669" : "#94a3b8", transition: "all 0.15s",
-                }}>
-                {showAvail ? "🟢 空き表示ON" : "⚪ 空き表示OFF"}
-              </button>
               <button onClick={() => setRegSchedOpen(true)}
-                style={{ padding: "4px 12px", border: "1px solid #93c5fd", borderRadius: 6, background: "#eff6ff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#2563eb" }}>
-                📅 定期スケジュール一覧
+                style={{ padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#64748b" }}>
+                定期一覧
               </button>
               <button onClick={() => setAvailOpen(true)}
-                style={{ padding: "4px 12px", border: "1px solid #86efac", borderRadius: 6, background: "#ecfdf5", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#059669" }}>
-                📊 空き状況一覧
+                style={{ padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#64748b" }}>
+                空き状況
               </button>
             </div>
           </div>
@@ -446,41 +371,13 @@ export default function App() {
                   {DAYS.map((_, di) => {
                     const cv = getCell(di, h, selStaff || null);
                     const isT = wOff === 0 && di === todayDow;
-                    const busyStaff = new Set(visits.filter((v) => v.day === di && v.startHour === h && v.status !== "キャンセル").map((v) => v.staffId));
-                    const freeCount = STAFF.length - busyStaff.size;
-                    const freeRatio = freeCount / STAFF.length;
-                    const availBg = !showAvail || selStaff ? "transparent" :
-                      freeRatio >= 0.75 ? "#f0fdf4" :
-                      freeRatio >= 0.5 ? "#fefce8" :
-                      freeRatio >= 0.25 ? "#fff7ed" :
-                      freeCount > 0 ? "#fef2f2" : "#fce4ec";
                     return (
                       <div key={`${di}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, di, h, selStaff)}
                         style={{ borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", height: 56, position: "relative",
-                          background: isT ? "#fafbff" : dragV ? "#f0fdf4" : (showAvail && !selStaff ? availBg : "white"),
+                          background: isT ? "#fafbff" : dragV ? "#f0fdf4" : "white",
                           ...(!selStaff && cv.length > 0 ? { display: "flex", gap: 1, padding: "2px 1px", overflowY: "visible" } : {}),
                         }}>
                         {cv.map((v) => { const st = STAFF.find((s) => s.id === v.staffId); return <VCard key={v.id} visit={v} staff={st} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={!selStaff} />; })}
-                        {showAvail && !selStaff && cv.length === 0 && (
-                          <div style={{
-                            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                            alignItems: "center", justifyContent: "center", pointerEvents: "none",
-                          }}>
-                            <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 500, lineHeight: 1, marginBottom: 1 }}>空き</span>
-                            <span style={{
-                              fontSize: 14, fontWeight: 800, lineHeight: 1,
-                              color: freeRatio >= 0.75 ? "#16a34a" : freeRatio >= 0.5 ? "#ca8a04" : freeRatio >= 0.25 ? "#ea580c" : "#dc2626",
-                            }}>{freeCount}<span style={{ fontSize: 10, fontWeight: 600 }}>/{STAFF.length}</span></span>
-                          </div>
-                        )}
-                        {showAvail && !selStaff && cv.length > 0 && (
-                          <div style={{
-                            position: "absolute", bottom: 1, right: 3, fontSize: 8, fontWeight: 700, pointerEvents: "none",
-                            color: freeRatio >= 0.5 ? "#16a34a" : freeRatio >= 0.25 ? "#ca8a04" : "#dc2626",
-                            background: freeRatio >= 0.5 ? "#ecfdf520" : freeRatio >= 0.25 ? "#fef3c720" : "#fef2f220",
-                            padding: "0px 3px", borderRadius: 3, lineHeight: "14px",
-                          }}>空{freeCount}/{STAFF.length}</div>
-                        )}
                       </div>
                     );
                   })}
