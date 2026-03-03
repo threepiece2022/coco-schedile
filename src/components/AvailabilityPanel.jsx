@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { STAFF, HOURS, DAYS, getCodeShort } from "../data.js";
+import { STAFF, HOURS, DAYS, getCodeShort, getStaffColor } from "../data.js";
 
 /**
  * 空き状況パネル
@@ -193,13 +193,13 @@ export default function AvailabilityPanel({ visits, onClose }) {
                 <React.Fragment key={staff.id}>
                   <div style={{
                     gridColumn: "1 / -1", padding: "8px 0 4px", fontSize: 12, fontWeight: 700,
-                    color: staff.color, display: "flex", alignItems: "center", gap: 6,
+                    color: getStaffColor(staff.id), display: "flex", alignItems: "center", gap: 6,
                     borderTop: "1px solid #f1f5f9", marginTop: 4,
                   }}>
                     <div style={{
-                      width: 22, height: 22, borderRadius: "50%", background: `${staff.color}18`,
+                      width: 22, height: 22, borderRadius: "50%", background: `${getStaffColor(staff.id)}18`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 10, fontWeight: 800, color: staff.color,
+                      fontSize: 10, fontWeight: 800, color: getStaffColor(staff.id),
                     }}>{staff.name[0]}</div>
                     {staff.name}
                     <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>

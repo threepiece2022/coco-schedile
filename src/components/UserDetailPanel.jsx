@@ -1,16 +1,17 @@
 import React, { useState } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration, getCodeShort } from "../data.js";
-import { InsBadge, StBadge, Section, InfoRow } from "./ui.jsx";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration, getCodeShort, getStaffColor, USER_STATUSES } from "../data.js";
+import { InsBadge, StBadge, StatusBadge, Section, InfoRow } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
 
-export default function UserDetailPanel({ user, visits, onClose, onSave, onDelete }) {
+export default function UserDetailPanel({ user, visits, areas, onClose, onSave, onDelete }) {
   if (!user) return null;
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(() => ({
-    name: user.name, address: user.address, area: user.area,
+    name: user.name, nameKana: user.nameKana || "", address: user.address, area: user.area,
     insuranceType: user.insuranceType, serviceCode: user.serviceCode,
     serviceLabel: user.serviceLabel, staffId: user.staffId, notes: user.notes || "",
+    status: user.status || "利用中",
   }));
   const [schedules, setSchedules] = useState(() => user.regularSchedule.map((s) => ({ ...s })));
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -53,9 +54,10 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
 
   const startEdit = () => {
     setForm({
-      name: user.name, address: user.address, area: user.area,
+      name: user.name, nameKana: user.nameKana || "", address: user.address, area: user.area,
       insuranceType: user.insuranceType, serviceCode: user.serviceCode,
       serviceLabel: user.serviceLabel, staffId: user.staffId, notes: user.notes || "",
+      status: user.status || "利用中",
     });
     setSchedules(user.regularSchedule.map((s) => ({ ...s })));
     setEditing(true);
@@ -82,12 +84,20 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
               <div style={{ display: "grid", gap: 10 }}>
                 <div><label style={lbl}>利用者名 <span style={{ color: "#ef4444" }}>*</span></label>
                   <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} style={inp} /></div>
+                <div><label style={lbl}>フリガナ</label>
+                  <input type="text" value={form.nameKana} onChange={(e) => set("nameKana", e.target.value)} placeholder="例: ヤマダ タロウ" style={inp} /></div>
                 <div><label style={lbl}>住所 <span style={{ color: "#ef4444" }}>*</span></label>
                   <input type="text" value={form.address} onChange={(e) => set("address", e.target.value)} style={inp} /></div>
-                <div><label style={lbl}>エリア</label>
-                  <select value={form.area} onChange={(e) => set("area", e.target.value)} style={sty}>
-                    {["柏エリア", "高塚エリア", "松戸エリア"].map((a) => <option key={a}>{a}</option>)}
-                  </select></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div><label style={lbl}>エリア</label>
+                    <select value={form.area} onChange={(e) => set("area", e.target.value)} style={sty}>
+                      {(areas || ["柏エリア", "高塚エリア", "松戸エリア"]).map((a) => <option key={a}>{a}</option>)}
+                    </select></div>
+                  <div><label style={lbl}>ステータス</label>
+                    <select value={form.status} onChange={(e) => set("status", e.target.value)} style={sty}>
+                      {USER_STATUSES.map((s) => <option key={s}>{s}</option>)}
+                    </select></div>
+                </div>
               </div>
             </Section>
 
@@ -171,7 +181,11 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
         <div style={{ padding: "18px 24px", borderBottom: "1px solid #e2e8f0", background: m ? "linear-gradient(135deg, #fefce8, #fff7ed)" : "linear-gradient(135deg, #eff6ff, #f0f9ff)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{user.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{user.name}</div>
+                <StatusBadge status={user.status || "利用中"} />
+              </div>
+              {user.nameKana && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{user.nameKana}</div>}
               <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{user.area}</div>
             </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -202,7 +216,7 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
                       <span style={{ fontSize: 9, color: "#059669", fontWeight: 600 }}>({(() => { const d = s.duration ?? 1; return d < 1 ? `${d * 60}分` : Number.isInteger(d) ? `${d}時間` : `${Math.floor(d)}時間${(d % 1) * 60}分`; })()})</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: entryStaff?.color || "#94a3b8" }}>{entryStaff?.name}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: entryStaff ? getStaffColor(entryStaff.id) : "#94a3b8" }}>{entryStaff?.name}</span>
                       <InsBadge type={entryIns} />
                       <span style={{ fontSize: 9, color: "#94a3b8" }}>{getCodeShort(entryCode)}</span>
                     </div>
@@ -218,7 +232,7 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
                   const vs = STAFF.find((s) => s.id === v.staffId);
                   return (
                     <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "#fafbfc", borderRadius: 6, border: "1px solid #f1f5f9" }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: vs?.color || "#94a3b8", flexShrink: 0 }} />
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: vs ? getStaffColor(vs.id) : "#94a3b8", flexShrink: 0 }} />
                       <div style={{ fontSize: 12, fontWeight: 600, color: "#1e293b", minWidth: 32 }}>{DAYS[v.day]}曜</div>
                       <div style={{ fontSize: 12, color: "#475569" }}>{v.startHour}:00〜</div>
                       <div style={{ fontSize: 11, color: "#64748b" }}>{vs?.name}</div>

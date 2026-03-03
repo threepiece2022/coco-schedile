@@ -1,13 +1,19 @@
 export const STAFF = [
-  { id: 1, name: "田中 看護師", color: "#2563eb", role: "看護師" },
-  { id: 2, name: "佐藤 看護師", color: "#7c3aed", role: "看護師" },
-  { id: 3, name: "鈴木 PT", color: "#059669", role: "理学療法士" },
-  { id: 4, name: "高橋 OT", color: "#d97706", role: "作業療法士" },
-  { id: 5, name: "伊藤 看護師", color: "#dc2626", role: "看護師" },
-  { id: 6, name: "渡辺 看護師", color: "#0891b2", role: "看護師" },
-  { id: 7, name: "山本 ST", color: "#be185d", role: "言語聴覚士" },
-  { id: 8, name: "中村 看護師", color: "#4f46e5", role: "看護師" },
+  { id: 1, name: "田中 看護師", role: "看護師" },
+  { id: 2, name: "佐藤 看護師", role: "看護師" },
+  { id: 3, name: "鈴木 PT", role: "理学療法士" },
+  { id: 4, name: "高橋 OT", role: "作業療法士" },
+  { id: 5, name: "伊藤 看護師", role: "看護師" },
+  { id: 6, name: "渡辺 看護師", role: "看護師" },
+  { id: 7, name: "山本 ST", role: "言語聴覚士" },
+  { id: 8, name: "中村 看護師", role: "看護師" },
 ];
+
+const STAFF_COLORS = ["#2563eb", "#7c3aed", "#059669", "#d97706", "#dc2626", "#0891b2", "#be185d", "#4f46e5"];
+export const getStaffColor = (staffId) => STAFF_COLORS[(staffId - 1) % STAFF_COLORS.length] || "#94a3b8";
+
+export const DEFAULT_AREAS = ["柏エリア", "高塚エリア", "松戸エリア"];
+export const USER_STATUSES = ["利用中", "中止中", "終了"];
 
 export const SERVICE_CODES = {
   kaigo: [
@@ -44,6 +50,9 @@ export const getCodeDuration = (code) => ALL_CODES.find((c) => c.code === code)?
 
 /** サービスコードから短縮表示名を取得 */
 export const getCodeShort = (code) => ALL_CODES.find((c) => c.code === code)?.short ?? code;
+
+/** 短縮名またはコード番号からサービスコード情報を取得 */
+export const getCodeByShort = (shortName) => ALL_CODES.find((c) => c.short === shortName || c.code === shortName) ?? null;
 
 export const HOURS = Array.from({ length: 10 }, (_, i) => i + 8); // 8:00-17:00
 export const DAYS = ["月", "火", "水", "木", "金", "土", "日"];
@@ -203,6 +212,7 @@ export const INITIAL_USERS = MOCK_USERS.map((u, i) => {
   return {
     id: i + 1,
     name: u.name,
+    nameKana: "",
     address: u.address,
     area: u.area,
     insuranceType: u.ins,
@@ -212,6 +222,7 @@ export const INITIAL_USERS = MOCK_USERS.map((u, i) => {
     regularSchedule: u.sched,
     staffId: u.staffId,
     notes: u.notes,
+    status: "利用中",
   };
 });
 

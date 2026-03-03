@@ -27,6 +27,20 @@ export const StBadge = ({ status }) => {
   );
 };
 
+export const StatusBadge = ({ status }) => {
+  const c = {
+    "利用中": ["#dcfce7", "#166534", "#86efac"],
+    "中止中": ["#fef3c7", "#92400e", "#fcd34d"],
+    "終了": ["#f3f4f6", "#374151", "#d1d5db"],
+  }[status] || ["#f3f4f6", "#374151", "#d1d5db"];
+  return (
+    <span style={{
+      fontSize: 9, padding: "1px 5px", borderRadius: 3,
+      background: c[0], color: c[1], border: `1px solid ${c[2]}`, fontWeight: 600,
+    }}>{status}</span>
+  );
+};
+
 export const Section = ({ icon, title, badge, bg, border, children }) => (
   <div style={{ marginBottom: 16, ...(bg ? { padding: 14, background: bg, borderRadius: 8, border: `1px solid ${border}` } : {}) }}>
     <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>

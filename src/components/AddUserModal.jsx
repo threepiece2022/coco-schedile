@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, getCodeDuration } from "../data.js";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, getCodeDuration, USER_STATUSES } from "../data.js";
 import { InsBadge, Section } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
 
@@ -7,14 +7,14 @@ const DURATION_OPTIONS = [1/3, 0.5, 2/3, 1, 1.5, 2];
 const fmtDur = (d) => d < 1 ? `${Math.round(d * 60)}分` : Number.isInteger(d) ? `${d}時間` : `${Math.floor(d)}時間${Math.round((d % 1) * 60)}分`;
 
 const EMPTY_USER = {
-  name: "", address: "", area: "柏エリア",
+  name: "", nameKana: "", address: "", area: "柏エリア",
   insuranceType: "介護", serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）",
   frequency: 1,
   regularSchedule: [{ day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）", insuranceType: "介護", duration: 1 }],
-  staffId: 1, notes: "",
+  staffId: 1, notes: "", status: "利用中",
 };
 
-export default function AddUserModal({ onClose, onSave }) {
+export default function AddUserModal({ onClose, onSave, areas }) {
   const [form, setForm] = useState({ ...EMPTY_USER });
   const [schedules, setSchedules] = useState([
     { day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）", insuranceType: "介護", duration: 1 },
@@ -58,12 +58,20 @@ export default function AddUserModal({ onClose, onSave }) {
             <div style={{ display: "grid", gap: 10 }}>
               <div><label style={lbl}>利用者名 <span style={{ color: "#ef4444" }}>*</span></label>
                 <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="例: 山田 太郎" style={inp} /></div>
+              <div><label style={lbl}>フリガナ</label>
+                <input type="text" value={form.nameKana} onChange={(e) => set("nameKana", e.target.value)} placeholder="例: ヤマダ タロウ" style={inp} /></div>
               <div><label style={lbl}>住所 <span style={{ color: "#ef4444" }}>*</span></label>
                 <input type="text" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="例: 柏市柏1-1-1" style={inp} /></div>
-              <div><label style={lbl}>エリア</label>
-                <select value={form.area} onChange={(e) => set("area", e.target.value)} style={sty}>
-                  {["柏エリア", "高塚エリア", "松戸エリア"].map((a) => <option key={a}>{a}</option>)}
-                </select></div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div><label style={lbl}>エリア</label>
+                  <select value={form.area} onChange={(e) => set("area", e.target.value)} style={sty}>
+                    {(areas || ["柏エリア", "高塚エリア", "松戸エリア"]).map((a) => <option key={a}>{a}</option>)}
+                  </select></div>
+                <div><label style={lbl}>ステータス</label>
+                  <select value={form.status} onChange={(e) => set("status", e.target.value)} style={sty}>
+                    {USER_STATUSES.map((s) => <option key={s}>{s}</option>)}
+                  </select></div>
+              </div>
             </div>
           </Section>
 

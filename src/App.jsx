@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration, getCodeShort } from "./data.js";
-import { InsBadge, StBadge } from "./components/ui.jsx";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration, getCodeShort, getStaffColor, DEFAULT_AREAS } from "./data.js";
+import { InsBadge, StBadge, StatusBadge } from "./components/ui.jsx";
 import { lbl, sty, navBtn } from "./styles.js";
 import UserDetailPanel from "./components/UserDetailPanel.jsx";
 import AddUserModal from "./components/AddUserModal.jsx";
 import AvailabilityPanel from "./components/AvailabilityPanel.jsx";
 import RegularSchedulePanel from "./components/RegularSchedulePanel.jsx";
 import CsvModal from "./components/CsvModal.jsx";
+import SettingsModal from "./components/SettingsModal.jsx";
 
 const insColor = (ins) => ins === "医療"
   ? { bg: "#fffbeb", border: "#f59e0b", text: "#92400e", left: "#d97706" }
@@ -61,11 +62,19 @@ const loadState = (key, fallback) => {
 };
 
 export default function App() {
-  const [users, setUsers] = useState(() => loadState("coco_users", INITIAL_USERS));
+  const [users, setUsers] = useState(() => {
+    const raw = loadState("coco_users", INITIAL_USERS);
+    return raw.map((u) => ({ ...u, nameKana: u.nameKana || "", status: u.status || "利用中" }));
+  });
   const [visits, setVisits] = useState(() => loadState("coco_visits", null) || generateVisits(loadState("coco_users", INITIAL_USERS)));
+  const [areas, setAreas] = useState(() => loadState("coco_areas", DEFAULT_AREAS));
+  const [office, setOffice] = useState(() => loadState("coco_office", { name: "スリーピース株式会社", address: "", phone: "" }));
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => { localStorage.setItem("coco_users", JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem("coco_visits", JSON.stringify(visits)); }, [visits]);
+  useEffect(() => { localStorage.setItem("coco_areas", JSON.stringify(areas)); }, [areas]);
+  useEffect(() => { localStorage.setItem("coco_office", JSON.stringify(office)); }, [office]);
   const [viewMode, setViewMode] = useState("staff");
   const [selStaff, setSelStaff] = useState(null);
   const [selUser, setSelUser] = useState(null);
@@ -120,7 +129,7 @@ export default function App() {
   });
 
   const fUsers = users.filter((u) =>
-    (u.name.includes(search) || u.area.includes(search) || u.address.includes(search) || u.serviceCode.includes(search)) &&
+    (u.name.includes(search) || (u.nameKana || "").includes(search) || u.area.includes(search) || u.address.includes(search) || u.serviceCode.includes(search)) &&
     (insF === "all" || u.insuranceType === insF)
   );
 
@@ -217,29 +226,40 @@ export default function App() {
   };
 
   const importUsers = (importedUsers, mergeMode) => {
+    // IDを自動付与し、user-levelフィールドを最初のスケジュールから導出
+    const prepareUsers = (list, startId) => list.map((u, i) => {
+      const first = u.regularSchedule?.[0];
+      return {
+        ...u,
+        id: u.id || startId + i,
+        nameKana: u.nameKana || "",
+        status: u.status || "利用中",
+        insuranceType: u.insuranceType || first?.insuranceType || "介護",
+        serviceCode: u.serviceCode || first?.serviceCode || "1313",
+        serviceLabel: u.serviceLabel || first?.serviceLabel || "",
+        staffId: u.staffId || first?.staffId || 1,
+      };
+    });
     if (mergeMode === "replace") {
-      // 全件置換: IDを振り直す
-      const newUsers = importedUsers.map((u, i) => ({ ...u, id: u.id || i + 1 }));
+      const newUsers = prepareUsers(importedUsers, 1);
       setUsers(newUsers);
       setVisits(generateVisits(newUsers));
     } else {
-      // 更新モード: ID一致で上書き＋新規追加
       setUsers((prev) => {
-        const existingMap = new Map(prev.map((u) => [u.id, u]));
         const nextId = prev.length > 0 ? Math.max(...prev.map((u) => u.id)) + 1 : 1;
-        let autoId = nextId;
+        const prepared = prepareUsers(importedUsers, nextId);
+        // name+address でマッチする既存ユーザーを上書き、なければ追加
         const merged = [...prev];
-        for (const u of importedUsers) {
-          if (u.id && existingMap.has(u.id)) {
-            const idx = merged.findIndex((m) => m.id === u.id);
-            if (idx >= 0) merged[idx] = { ...u, id: u.id };
+        for (const u of prepared) {
+          const existIdx = merged.findIndex((m) => m.name === u.name && m.address === u.address);
+          if (existIdx >= 0) {
+            merged[existIdx] = { ...u, id: merged[existIdx].id };
           } else {
-            merged.push({ ...u, id: u.id || autoId++ });
+            merged.push(u);
           }
         }
-        const newUsers = merged;
-        setVisits(generateVisits(newUsers));
-        return newUsers;
+        setVisits(generateVisits(merged));
+        return merged;
       });
     }
     setCsvOpen(false);
@@ -254,10 +274,16 @@ export default function App() {
       <div style={{ background: "#0f172a", color: "white", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 1 }}>訪問看護スケジュール管理</div>
-          <span style={{ fontSize: 10, opacity: 0.5 }}>スリーピース株式会社</span>
+          <span style={{ fontSize: 10, opacity: 0.5 }}>{office.name || "スリーピース株式会社"}</span>
         </div>
-        <div style={{ fontSize: 11, opacity: 0.6 }}>
-          {calendarMode === "day" && dayOff !== 0 ? "選択日" : "本日"} {tVis}件 / 週 {visits.length}件
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 11, opacity: 0.6 }}>
+            {calendarMode === "day" && dayOff !== 0 ? "選択日" : "本日"} {tVis}件 / 週 {visits.length}件
+          </span>
+          <button onClick={() => setSettingsOpen(true)}
+            style={{ padding: "4px 10px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, background: "rgba(255,255,255,0.1)", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "white" }}>
+            設定
+          </button>
         </div>
       </div>
 
@@ -288,9 +314,9 @@ export default function App() {
                 const ct = visits.filter((v) => v.staffId === s.id).length;
                 return (
                   <button key={s.id} onClick={() => setSelStaff(s.id)}
-                    style={{ width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left", marginBottom: 2, background: selStaff === s.id ? `${s.color}10` : "transparent", borderLeft: selStaff === s.id ? `3px solid ${s.color}` : "3px solid transparent" }}>
+                    style={{ width: "100%", padding: "6px 10px", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left", marginBottom: 2, background: selStaff === s.id ? `${getStaffColor(s.id)}10` : "transparent", borderLeft: selStaff === s.id ? `3px solid ${getStaffColor(s.id)}` : "3px solid transparent" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${s.color}18`, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{s.name[0]}</div>
+                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${getStaffColor(s.id)}18`, color: getStaffColor(s.id), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{s.name[0]}</div>
                       <span style={{ fontSize: 11, fontWeight: 600, color: "#1e293b", flex: 1 }}>{s.name}</span>
                       <span style={{ fontSize: 9, color: "#94a3b8" }}>{ct}件</span>
                     </div>
@@ -315,6 +341,7 @@ export default function App() {
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <span style={{ fontWeight: selUser === u.id ? 700 : 400, color: "#334155" }}>{u.name}</span>
                         <InsBadge type={u.insuranceType} />
+                        {u.status && u.status !== "利用中" && <StatusBadge status={u.status} />}
                       </span>
                       <span style={{ fontSize: 9, color: "#94a3b8" }}>週{u.frequency} · {getCodeShort(u.serviceCode)}</span>
                     </button>
@@ -558,11 +585,12 @@ export default function App() {
         </div>
       )}
 
-      {viewUser && <UserDetailPanel user={viewUser} visits={visits} onClose={() => setViewUser(null)} onSave={updateUser} onDelete={deleteUser} />}
-      {addUserOpen && <AddUserModal onClose={() => setAddUserOpen(false)} onSave={addUser} />}
+      {viewUser && <UserDetailPanel user={viewUser} visits={visits} areas={areas} onClose={() => setViewUser(null)} onSave={updateUser} onDelete={deleteUser} />}
+      {addUserOpen && <AddUserModal areas={areas} onClose={() => setAddUserOpen(false)} onSave={addUser} />}
       {availOpen && <AvailabilityPanel visits={visits} onClose={() => setAvailOpen(false)} />}
       {regSchedOpen && <RegularSchedulePanel users={users} visits={visits} onClose={() => setRegSchedOpen(false)} />}
-      {csvOpen && <CsvModal users={users} onClose={() => setCsvOpen(false)} onImport={importUsers} />}
+      {csvOpen && <CsvModal users={users} areas={areas} onClose={() => setCsvOpen(false)} onImport={importUsers} />}
+      {settingsOpen && <SettingsModal office={office} areas={areas} onClose={() => setSettingsOpen(false)} onSaveOffice={setOffice} onSaveAreas={setAreas} />}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { STAFF, DAYS } from "../data.js";
 import { generateStaffCsv, generateUsersCsv, parseUsersCsv, downloadCsv } from "../utils/csv.js";
 import { lbl } from "../styles.js";
 
-export default function CsvModal({ users, onClose, onImport }) {
+export default function CsvModal({ users, areas, onClose, onImport }) {
   const [tab, setTab] = useState("export");
   const [file, setFile] = useState(null);
   const [mergeMode, setMergeMode] = useState("merge"); // merge | replace
@@ -26,7 +26,7 @@ export default function CsvModal({ users, onClose, onImport }) {
     setImportDone(false);
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const result = parseUsersCsv(ev.target.result);
+      const result = parseUsersCsv(ev.target.result, areas);
       setParseResult(result);
     };
     reader.readAsText(f, "UTF-8");
@@ -73,7 +73,7 @@ export default function CsvModal({ users, onClose, onImport }) {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>職員マスタ</div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>ID・名前・役職・カラー（{STAFF.length}名）</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>ID・名前・役職（{STAFF.length}名）</div>
                   </div>
                   <button onClick={handleExportStaff} style={{ padding: "8px 16px", border: "none", background: "#0f172a", color: "white", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>ダウンロード</button>
                 </div>
@@ -108,7 +108,7 @@ export default function CsvModal({ users, onClose, onImport }) {
                 <label style={lbl}>インポートモード</label>
                 <div style={{ display: "flex", gap: 8 }}>
                   {[
-                    { value: "merge", label: "更新", desc: "ID一致で上書き＋新規追加" },
+                    { value: "merge", label: "更新", desc: "名前+住所一致で上書き＋新規追加" },
                     { value: "replace", label: "全件置換", desc: "既存データを全削除して入れ替え" },
                   ].map((m) => (
                     <button key={m.value} onClick={() => setMergeMode(m.value)}

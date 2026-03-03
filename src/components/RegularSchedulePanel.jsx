@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { STAFF, HOURS, DAYS } from "../data.js";
+import { STAFF, HOURS, DAYS, getStaffColor } from "../data.js";
 import { InsBadge } from "./ui.jsx";
 
 /**
@@ -138,9 +138,9 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
                           <div key={`${entry.user.id}-${idx}`} style={{
                             display: "flex", alignItems: "center", gap: 2,
                             padding: "1px 3px", borderRadius: 3, marginBottom: 1,
-                            background: "white", border: `1px solid ${entryStaff?.color || "#e2e8f0"}20`,
+                            background: "white", border: `1px solid ${entryStaff ? getStaffColor(entryStaff.id) : "#e2e8f0"}20`,
                           }}>
-                            <span style={{ color: entryStaff?.color, fontWeight: 700, fontSize: 8, flexShrink: 0 }}>
+                            <span style={{ color: entryStaff ? getStaffColor(entryStaff.id) : "#94a3b8", fontWeight: 700, fontSize: 8, flexShrink: 0 }}>
                               {entryStaff?.name.slice(0, 2)}
                             </span>
                             <span style={{ color: "#475569", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -181,20 +181,20 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
                 });
                 return (
                   <div key={s.id} style={{
-                    padding: "10px 14px", borderRadius: 8, background: `${s.color}06`,
-                    border: `1.5px solid ${s.color}20`, display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 14px", borderRadius: 8, background: `${getStaffColor(s.id)}06`,
+                    border: `1.5px solid ${getStaffColor(s.id)}20`, display: "flex", alignItems: "center", gap: 10,
                   }}>
                     <div style={{
-                      width: 30, height: 30, borderRadius: "50%", background: `${s.color}15`,
+                      width: 30, height: 30, borderRadius: "50%", background: `${getStaffColor(s.id)}15`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, fontWeight: 800, color: s.color, flexShrink: 0,
+                      fontSize: 12, fontWeight: 800, color: getStaffColor(s.id), flexShrink: 0,
                     }}>{s.name[0]}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{s.name}</div>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>{s.role}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: s.color }}>{userCount}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: getStaffColor(s.id) }}>{userCount}</div>
                       <div style={{ fontSize: 9, color: "#94a3b8" }}>名 · 週{totalEntries}回</div>
                     </div>
                   </div>
