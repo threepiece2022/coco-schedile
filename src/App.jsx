@@ -49,7 +49,7 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode, conflict }
         </div>
       )}
       <div style={{ fontSize: 8, color: conflict ? "#dc2626" : "#94a3b8", fontWeight: 600, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {hMode ? `${Math.floor(visit.startHour)}:${visit.startHour % 1 ? "30" : "00"} ${getCodeShort(visit.serviceCode)}` : `${Math.floor(visit.startHour)}:${visit.startHour % 1 ? "30" : "00"}〜`}
+        {hMode ? `${Math.floor(visit.startHour)}:${String(Math.round((visit.startHour % 1) * 60)).padStart(2, "0")} ${getCodeShort(visit.serviceCode)}` : `${Math.floor(visit.startHour)}:${String(Math.round((visit.startHour % 1) * 60)).padStart(2, "0")}〜`}
       </div>
     </div>
   );
@@ -367,15 +367,25 @@ export default function App() {
                         </div>
                       </div>
                     <div style={{ position: "relative", height: 56, borderBottom: "1px solid #e2e8f0" }}>
-                      {/* 時間グリッド線 + ドロップターゲット */}
-                      <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${HOURS.length * 2}, 1fr)` }}>
+                      {/* 時間グリッド線（表示用） */}
+                      <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${HOURS.length * 2}, 1fr)`, pointerEvents: "none" }}>
                         {HOURS.flatMap((h) => [
-                          <div key={`drop-${s.id}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
-                            style={{ borderLeft: "1px solid #cbd5e1", background: dragV ? "#f0fdf408" : "transparent" }} />,
-                          <div key={`drop-${s.id}-${h}-half`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h + 0.5, s.id)}
-                            style={{ borderLeft: "1px dashed #e2e8f0", background: dragV ? "#f0fdf408" : "transparent" }} />,
+                          <div key={`gl-${s.id}-${h}`} style={{ borderLeft: "1px solid #cbd5e1" }} />,
+                          <div key={`gl-${s.id}-${h}-half`} style={{ borderLeft: "1px dashed #e2e8f0" }} />,
                         ])}
                       </div>
+                      {/* ドロップターゲット（5分刻み） */}
+                      <div style={{ position: "absolute", inset: 0, background: dragV ? "#f0fdf408" : "transparent" }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const ratio = (e.clientX - rect.left) / rect.width;
+                          const rawMin = ratio * HOURS.length * 60;
+                          const snapped = Math.round(rawMin / 5) * 5;
+                          const hour = HOURS[0] + snapped / 60;
+                          onDrop(e, selDow, hour, s.id);
+                        }}
+                      />
                       {/* 訪問カード（duration に応じた幅） */}
                       {staffVisits.map((v) => {
                         const left = ((v.startHour - HOURS[0]) / HOURS.length) * 100;
@@ -464,7 +474,7 @@ export default function App() {
                   <select value={editV.staffId} onChange={(e) => setEditV({ ...editV, staffId: Number(e.target.value) })} style={sty}>{STAFF.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div><label style={lbl}>曜日</label><select value={editV.day} onChange={(e) => setEditV({ ...editV, day: Number(e.target.value) })} style={sty}>{DAYS.map((d, i) => <option key={i} value={i}>{d}曜日</option>)}</select></div>
-                  <div><label style={lbl}>開始時間</label><select value={editV.startHour} onChange={(e) => setEditV({ ...editV, startHour: Number(e.target.value) })} style={sty}>{HOURS.flatMap((h) => [<option key={h} value={h}>{h}:00</option>, <option key={h + 0.5} value={h + 0.5}>{h}:30</option>])}</select></div>
+                  <div><label style={lbl}>開始時間</label><select value={editV.startHour} onChange={(e) => setEditV({ ...editV, startHour: Number(e.target.value) })} style={sty}>{HOURS.flatMap((h) => Array.from({ length: 12 }, (_, i) => { const t = h + i * 5 / 60; return <option key={t} value={t}>{h}:{String(i * 5).padStart(2, "0")}</option>; }))}</select></div>
                 </div>
                 <div><label style={lbl}>サービスコード</label>
                   <select value={editV.serviceCode} onChange={(e) => { const sc = ALL_CODES.find((c) => c.code === e.target.value); setEditV({ ...editV, serviceCode: e.target.value, insuranceType: sc?.insurance || editV.insuranceType }); }} style={sty}>
