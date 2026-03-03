@@ -7,19 +7,22 @@ import AddUserModal from "./components/AddUserModal.jsx";
 import AvailabilityPanel from "./components/AvailabilityPanel.jsx";
 import RegularSchedulePanel from "./components/RegularSchedulePanel.jsx";
 
-const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode }) => {
+const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode }) => {
   const h = visit.duration * 56 - 4;
   const m = visit.insuranceType === "医療";
   return (
     <div draggable onDragStart={(e) => onDS(e, visit)} onClick={() => onEdit(visit)}
       style={{
-        ...(flexMode
-          ? { flex: "1 1 0", minWidth: 0, height: h }
-          : { position: "absolute", top: 2, left: 2, right: 2, height: h }),
+        ...(hMode
+          ? { width: "100%", height: "100%" }
+          : flexMode
+            ? { flex: "1 1 0", minWidth: 0, height: h }
+            : { position: "absolute", top: 2, left: 2, right: 2, height: h }),
         background: m ? `linear-gradient(135deg, #fef3c710, ${staff.color}08)` : `linear-gradient(135deg, ${staff.color}14, ${staff.color}06)`,
         border: `1.5px solid ${staff.color}35`, borderLeft: `3px solid ${m ? "#d97706" : staff.color}`,
         borderRadius: 6, padding: "3px 6px", cursor: "grab", opacity: isDrag ? 0.35 : 1,
         transition: "box-shadow 0.15s, transform 0.15s", overflow: "hidden", zIndex: isDrag ? 100 : 1, fontSize: 11,
+        boxSizing: "border-box",
       }}
       onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 2px 8px ${staff.color}25`; e.currentTarget.style.transform = "scale(1.02)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "scale(1)"; }}
@@ -28,11 +31,14 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode }) => {
         <span style={{ fontWeight: 700, color: staff.color, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: flexMode ? 9 : 11 }}>{flexMode ? visit.userName.slice(-3) : visit.userName}</span>
         <InsBadge type={visit.insuranceType} />
       </div>
-      {!flexMode && visit.duration >= 1 && (
+      {!flexMode && !hMode && visit.duration >= 1 && (
         <div style={{ display: "flex", gap: 3, alignItems: "center", marginTop: 2 }}>
           <span style={{ color: "#94a3b8", fontSize: 9 }}>{getCodeShort(visit.serviceCode)}</span>
           <StBadge status={visit.status} />
         </div>
+      )}
+      {hMode && (
+        <div style={{ fontSize: 8, color: "#94a3b8", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getCodeShort(visit.serviceCode)}</div>
       )}
     </div>
   );
@@ -308,49 +314,51 @@ export default function App() {
 
           <div style={{ flex: 1, overflow: "auto" }}>
             {calendarMode === "day" ? (
-              /* 日次ビュー: スタッフ行 × 時間列 */
-              <div style={{ display: "grid", gridTemplateColumns: `100px repeat(${HOURS.length}, minmax(0, 1fr))`, minWidth: 800 }}>
-                {/* ヘッダー: 空セル + 時間列 */}
+              /* 日次ビュー: スタッフ行 × 時間列（duration に応じた幅） */
+              <div style={{ display: "grid", gridTemplateColumns: `100px 1fr`, minWidth: 800 }}>
+                {/* ヘッダー: 空セル + 時間ラベル */}
                 <div style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }} />
-                {HOURS.map((h) => (
-                  <div key={`dh-${h}`} style={{ textAlign: "center", padding: "8px 4px", borderBottom: "2px solid #e2e8f0", borderLeft: "1px solid #f1f5f9", background: "#f8fafc", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{h}:00</div>
-                ))}
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${HOURS.length}, 1fr)`, borderBottom: "2px solid #e2e8f0" }}>
+                  {HOURS.map((h) => (
+                    <div key={`dh-${h}`} style={{ textAlign: "center", padding: "8px 4px", borderLeft: "1px solid #f1f5f9", background: "#f8fafc", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{h}:00</div>
+                  ))}
+                </div>
                 {/* スタッフ行 */}
                 {STAFF.map((s) => {
                   const dayCt = dayFilteredVisits.filter((v) => v.staffId === s.id).length;
+                  const staffVisits = dayFilteredVisits.filter((v) => v.staffId === s.id);
                   const isSelected = selStaff === s.id;
                   return (<>
                     <div key={`sl-${s.id}`} onClick={() => setSelStaff(selStaff === s.id ? null : s.id)}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderBottom: "1px solid #f1f5f9", background: isSelected ? `${s.color}10` : "#f8fafc", cursor: "pointer" }}>
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderBottom: "1px solid #e2e8f0", background: isSelected ? `${s.color}10` : "#f8fafc", cursor: "pointer" }}>
                       <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${s.color}18`, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{s.name[0]}</div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: isSelected ? s.color : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
                         <div style={{ fontSize: 9, color: "#94a3b8" }}>{dayCt}件</div>
                       </div>
                     </div>
-                    {HOURS.map((h) => {
-                      const cv = dayFilteredVisits.filter((v) => v.startHour === h && v.staffId === s.id);
-                      const isEmpty = cv.length === 0;
-                      return (
-                        <div key={`d-${s.id}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
-                          style={{
-                            borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", height: 56, position: "relative",
-                            background: isEmpty ? (dragV ? "#f0fdf420" : "#f0fdf408") : isSelected ? `${s.color}06` : "white",
-                          }}>
-                          {cv.map((v) => {
-                            const isHighlighted = selUser && v.userId === selUser;
-                            return (
-                              <div key={v.id} style={{ position: "relative" }}>
-                                <VCard visit={v} staff={s} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(vv) => setEditV({ ...vv, editPerm: false })} flexMode={false} />
-                                {isHighlighted && <div style={{ position: "absolute", inset: 0, border: "2px solid #f59e0b", borderRadius: 6, pointerEvents: "none" }} />}
-                                {v._isAdj && <div style={{ position: "absolute", top: 1, right: 1, fontSize: 7, fontWeight: 700, color: "#ea580c", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 3, padding: "0 3px", lineHeight: "13px", pointerEvents: "none" }}>一時</div>}
-                              </div>
-                            );
-                          })}
-                          {isEmpty && <div style={{ position: "absolute", inset: 0, background: dragV ? "#dcfce740" : "transparent", transition: "background 0.15s" }} />}
-                        </div>
-                      );
-                    })}
+                    <div style={{ position: "relative", height: 56, borderBottom: "1px solid #e2e8f0" }}>
+                      {/* 時間グリッド線 + ドロップターゲット */}
+                      <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${HOURS.length}, 1fr)` }}>
+                        {HOURS.map((h) => (
+                          <div key={`drop-${s.id}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
+                            style={{ borderLeft: "1px solid #f1f5f9", background: dragV ? "#f0fdf408" : "transparent" }} />
+                        ))}
+                      </div>
+                      {/* 訪問カード（duration に応じた幅） */}
+                      {staffVisits.map((v) => {
+                        const left = ((v.startHour - HOURS[0]) / HOURS.length) * 100;
+                        const width = (v.duration / HOURS.length) * 100;
+                        const isHighlighted = selUser && v.userId === selUser;
+                        return (
+                          <div key={v.id} style={{ position: "absolute", left: `${left}%`, width: `${width}%`, top: 2, bottom: 2, padding: "0 1px", boxSizing: "border-box", zIndex: 2 }}>
+                            <VCard visit={v} staff={s} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(vv) => setEditV({ ...vv, editPerm: false })} hMode />
+                            {isHighlighted && <div style={{ position: "absolute", inset: "0 1px", border: "2px solid #f59e0b", borderRadius: 6, pointerEvents: "none" }} />}
+                            {v._isAdj && <div style={{ position: "absolute", top: 1, right: 3, fontSize: 7, fontWeight: 700, color: "#ea580c", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 3, padding: "0 3px", lineHeight: "13px", pointerEvents: "none", zIndex: 3 }}>一時</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </>);
                 })}
               </div>
