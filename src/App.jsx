@@ -100,6 +100,28 @@ export default function App() {
     setAddUserOpen(false);
   };
 
+  const updateUser = (form) => {
+    setUsers((prev) => prev.map((u) => u.id === form.id ? { ...u, ...form } : u));
+    setVisits((prev) => {
+      const kept = prev.filter((v) => v.userId !== form.id);
+      const newVisits = form.regularSchedule.map((s, i) => ({
+        id: Date.now() + i, staffId: form.staffId, userId: form.id, userName: form.name, area: form.area,
+        day: s.day, startHour: s.hour,
+        duration: form.insuranceType === "医療" ? 1.5 : 1,
+        type: form.serviceLabel.includes("理学") ? "リハビリ" : form.insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
+        serviceCode: form.serviceCode, insuranceType: form.insuranceType, status: "予定",
+      }));
+      return [...kept, ...newVisits];
+    });
+    setViewUser(null);
+  };
+
+  const deleteUser = (userId) => {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    setVisits((prev) => prev.filter((v) => v.userId !== userId));
+    setViewUser(null);
+  };
+
   const tVis = visits.filter((v) => v.day === todayDow).length;
   const kC = visits.filter((v) => v.insuranceType === "介護").length;
   const iC = visits.filter((v) => v.insuranceType === "医療").length;
@@ -376,7 +398,7 @@ export default function App() {
         </div>
       )}
 
-      {viewUser && <UserDetailPanel user={viewUser} visits={visits} onClose={() => setViewUser(null)} />}
+      {viewUser && <UserDetailPanel user={viewUser} visits={visits} onClose={() => setViewUser(null)} onSave={updateUser} onDelete={deleteUser} />}
       {addUserOpen && <AddUserModal onClose={() => setAddUserOpen(false)} onSave={addUser} />}
       {availOpen && <AvailabilityPanel visits={visits} onClose={() => setAvailOpen(false)} />}
       {regSchedOpen && <RegularSchedulePanel users={users} visits={visits} onClose={() => setRegSchedOpen(false)} />}
