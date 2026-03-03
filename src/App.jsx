@@ -309,7 +309,7 @@ export default function App() {
           <div style={{ flex: 1, overflow: "auto" }}>
             {calendarMode === "day" ? (
               /* 日次ビュー: スタッフ行 × 時間列 */
-              <div style={{ display: "grid", gridTemplateColumns: `100px repeat(${HOURS.length}, 1fr)`, minWidth: 800 }}>
+              <div style={{ display: "grid", gridTemplateColumns: `100px repeat(${HOURS.length}, minmax(0, 1fr))`, minWidth: 800 }}>
                 {/* ヘッダー: 空セル + 時間列 */}
                 <div style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }} />
                 {HOURS.map((h) => (
