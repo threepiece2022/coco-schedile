@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration } from "./data.js";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration, getCodeShort } from "./data.js";
 import { InsBadge, StBadge } from "./components/ui.jsx";
 import { lbl, sty, navBtn } from "./styles.js";
 import UserDetailPanel from "./components/UserDetailPanel.jsx";
@@ -30,7 +30,7 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode }) => {
       </div>
       {!flexMode && visit.duration >= 1 && (
         <div style={{ display: "flex", gap: 3, alignItems: "center", marginTop: 2 }}>
-          <span style={{ color: "#94a3b8", fontSize: 9 }}>{visit.serviceCode}</span>
+          <span style={{ color: "#94a3b8", fontSize: 9 }}>{getCodeShort(visit.serviceCode)}</span>
           <StBadge status={visit.status} />
         </div>
       )}
@@ -253,7 +253,7 @@ export default function App() {
                         <span style={{ fontWeight: selUser === u.id ? 700 : 400, color: "#334155" }}>{u.name}</span>
                         <InsBadge type={u.insuranceType} />
                       </span>
-                      <span style={{ fontSize: 9, color: "#94a3b8" }}>週{u.frequency} · {u.serviceCode}</span>
+                      <span style={{ fontSize: 9, color: "#94a3b8" }}>週{u.frequency} · {getCodeShort(u.serviceCode)}</span>
                     </button>
                     <button onClick={() => setViewUser(u)} style={{ border: "none", background: "none", cursor: "pointer", fontSize: 12, padding: "2px 4px", color: "#94a3b8" }} title="詳細">ℹ️</button>
                   </div>
@@ -403,8 +403,8 @@ export default function App() {
               </div>
               <div><label style={lbl}>サービスコード</label>
                 <select value={editV.serviceCode} onChange={(e) => { const sc = ALL_CODES.find((c) => c.code === e.target.value); setEditV({ ...editV, serviceCode: e.target.value, insuranceType: sc?.insurance || editV.insuranceType }); }} style={sty}>
-                  <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.code} - {c.label}</option>)}</optgroup>
-                  <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.code} - {c.label}</option>)}</optgroup>
+                  <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
+                  <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
                 </select></div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <div><label style={lbl}>訪問種別</label><select value={editV.type} onChange={(e) => setEditV({ ...editV, type: e.target.value })} style={sty}>{["訪問看護", "医療訪問看護", "リハビリ", "特別訪問", "緊急訪問"].map((t) => <option key={t}>{t}</option>)}</select></div>

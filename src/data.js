@@ -11,26 +11,29 @@ export const STAFF = [
 
 export const SERVICE_CODES = {
   kaigo: [
-    { code: "1311", label: "訪看I1（20分未満）", insurance: "介護", duration: 0.5 },
-    { code: "1312", label: "訪看I2（30分未満）", insurance: "介護", duration: 0.5 },
-    { code: "1313", label: "訪看I3（30分〜1時間未満）", insurance: "介護", duration: 1 },
-    { code: "1314", label: "訪看I4（1時間〜1時間半未満）", insurance: "介護", duration: 1.5 },
-    { code: "1315", label: "訪看I5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
-    { code: "1316", label: "訪看I5-2（理学療法士等・40分）", insurance: "介護", duration: 1 },
-    { code: "1411", label: "予防訪看I1（20分未満）", insurance: "介護", duration: 0.5 },
-    { code: "1412", label: "予防訪看I2（30分未満）", insurance: "介護", duration: 0.5 },
-    { code: "1413", label: "予防訪看I3（30分〜1時間未満）", insurance: "介護", duration: 1 },
-    { code: "1414", label: "予防訪看I5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
+    { code: "1311", short: "訪看Ⅰ1", label: "訪看Ⅰ1（20分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1312", short: "訪看Ⅰ2", label: "訪看Ⅰ2（30分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1313", short: "訪看Ⅰ3", label: "訪看Ⅰ3（30分〜1時間未満）", insurance: "介護", duration: 1 },
+    { code: "1314", short: "訪看Ⅰ4", label: "訪看Ⅰ4（1時間〜1時間半未満）", insurance: "介護", duration: 1.5 },
+    { code: "1315", short: "Ⅰ5", label: "訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
+    { code: "1316", short: "Ⅰ5-2", label: "訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 1 },
+    { code: "1317", short: "Ⅰ5-2超", label: "訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
+    { code: "1411", short: "予防Ⅰ1", label: "予防訪看Ⅰ1（20分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1412", short: "予防Ⅰ2", label: "予防訪看Ⅰ2（30分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1413", short: "予防Ⅰ3", label: "予防訪看Ⅰ3（30分〜1時間未満）", insurance: "介護", duration: 1 },
+    { code: "1414", short: "予防Ⅰ5", label: "予防訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
+    { code: "1415", short: "予防Ⅰ5-2", label: "予防訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 1 },
+    { code: "1416", short: "予防Ⅰ5-2超", label: "予防訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
   ],
   iryo: [
-    { code: "C005", label: "訪問看護基本療養費(I)", insurance: "医療", duration: 1.5 },
-    { code: "C005-2", label: "訪問看護基本療養費(II)", insurance: "医療", duration: 1.5 },
-    { code: "C006", label: "精神科訪問看護基本療養費", insurance: "医療", duration: 1.5 },
-    { code: "C007", label: "訪問看護管理療養費", insurance: "医療", duration: 1 },
-    { code: "C008", label: "訪問看護情報提供療養費", insurance: "医療", duration: 1 },
-    { code: "C009", label: "訪問看護ターミナルケア療養費", insurance: "医療", duration: 1.5 },
-    { code: "C010", label: "24時間対応体制加算", insurance: "医療", duration: 1 },
-    { code: "C011", label: "特別管理加算", insurance: "医療", duration: 1 },
+    { code: "C005", short: "基本療養費Ⅰ", label: "訪問看護基本療養費(Ⅰ)", insurance: "医療", duration: 1.5 },
+    { code: "C005-2", short: "基本療養費Ⅱ", label: "訪問看護基本療養費(Ⅱ)", insurance: "医療", duration: 1.5 },
+    { code: "C006", short: "精神科基本", label: "精神科訪問看護基本療養費", insurance: "医療", duration: 1.5 },
+    { code: "C007", short: "管理療養費", label: "訪問看護管理療養費", insurance: "医療", duration: 1 },
+    { code: "C008", short: "情報提供", label: "訪問看護情報提供療養費", insurance: "医療", duration: 1 },
+    { code: "C009", short: "ターミナル", label: "訪問看護ターミナルケア療養費", insurance: "医療", duration: 1.5 },
+    { code: "C010", short: "24h加算", label: "24時間対応体制加算", insurance: "医療", duration: 1 },
+    { code: "C011", short: "特別管理", label: "特別管理加算", insurance: "医療", duration: 1 },
   ],
 };
 
@@ -38,6 +41,9 @@ export const ALL_CODES = [...SERVICE_CODES.kaigo, ...SERVICE_CODES.iryo];
 
 /** サービスコードからデフォルトdurationを取得 */
 export const getCodeDuration = (code) => ALL_CODES.find((c) => c.code === code)?.duration ?? 1;
+
+/** サービスコードから短縮表示名を取得 */
+export const getCodeShort = (code) => ALL_CODES.find((c) => c.code === code)?.short ?? code;
 
 export const HOURS = Array.from({ length: 10 }, (_, i) => i + 8); // 8:00-17:00
 export const DAYS = ["月", "火", "水", "木", "金", "土", "日"];
@@ -55,14 +61,14 @@ const ADDRESSES = [
 const NS = [1, 2, 5, 6, 8];
 const RH = [3, 4, 7];
 
-const s13 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）", insuranceType: "介護", duration: 1 });
-const s14 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1314", serviceLabel: "訪看I4（1時間〜1時間半未満）", insuranceType: "介護", duration: 1.5 });
-const s12 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1312", serviceLabel: "訪看I2（30分未満）", insuranceType: "介護", duration: 0.5 });
-const r16 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1316", serviceLabel: "訪看I5-2（理学療法士等・40分）", insuranceType: "介護", duration: 1 });
-const r15 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1315", serviceLabel: "訪看I5（理学療法士等・20分）", insuranceType: "介護", duration: 0.5 });
-const mC5 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "C005", serviceLabel: "訪問看護基本療養費(I)", insuranceType: "医療", duration: 1.5 });
-const p13 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1413", serviceLabel: "予防訪看I3（30分〜1時間未満）", insuranceType: "介護", duration: 1 });
-const p14 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1414", serviceLabel: "予防訪看I5（理学療法士等・20分）", insuranceType: "介護", duration: 0.5 });
+const s13 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）", insuranceType: "介護", duration: 1 });
+const s14 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1314", serviceLabel: "訪看Ⅰ4（1時間〜1時間半未満）", insuranceType: "介護", duration: 1.5 });
+const s12 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1312", serviceLabel: "訪看Ⅰ2（30分未満）", insuranceType: "介護", duration: 0.5 });
+const r16 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1316", serviceLabel: "訪看Ⅰ5-2（理学療法士等・40分）", insuranceType: "介護", duration: 1 });
+const r15 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1315", serviceLabel: "訪看Ⅰ5（理学療法士等・20分）", insuranceType: "介護", duration: 0.5 });
+const mC5 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "C005", serviceLabel: "訪問看護基本療養費(Ⅰ)", insuranceType: "医療", duration: 1.5 });
+const p13 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1413", serviceLabel: "予防訪看Ⅰ3（30分〜1時間未満）", insuranceType: "介護", duration: 1 });
+const p14 = (sid, day, hour) => ({ day, hour, staffId: sid, serviceCode: "1414", serviceLabel: "予防訪看Ⅰ5（理学療法士等・20分）", insuranceType: "介護", duration: 0.5 });
 
 const MOCK_USERS = [
   // ========== 看護のみ（20名）==========

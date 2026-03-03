@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { STAFF, HOURS, DAYS } from "../data.js";
+import { STAFF, HOURS, DAYS, getCodeShort } from "../data.js";
 
 /**
  * 空き状況パネル
@@ -223,7 +223,7 @@ export default function AvailabilityPanel({ visits, onClose }) {
                             background: cc.bg, fontSize: 9, fontWeight: 700, color: cc.text,
                             border: `1px solid ${cc.bg}`,
                             cursor: cellVisits.length > 0 ? "help" : "default",
-                          }} title={cellVisits.length > 0 ? cellVisits.map((v) => `${v.userName} (${v.serviceCode})`).join(", ") : "空き"}>
+                          }} title={cellVisits.length > 0 ? cellVisits.map((v) => `${v.userName} (${getCodeShort(v.serviceCode)})`).join(", ") : "空き"}>
                             {cnt === 0 ? "◯" : cellVisits.map((v) => v.userName.slice(-3)).join(",")}
                           </div>
                         );

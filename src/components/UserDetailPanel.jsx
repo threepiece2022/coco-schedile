@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration } from "../data.js";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration, getCodeShort } from "../data.js";
 import { InsBadge, StBadge, Section, InfoRow } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
 
@@ -132,8 +132,8 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
                           ))}
                         </div>
                         <select value={s.serviceCode} onChange={(e) => setSchedCode(i, e.target.value)} style={{ ...sty, flex: 2, fontSize: 10 }}>
-                          <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.code} - {c.label}</option>)}</optgroup>
-                          <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.code} - {c.label}</option>)}</optgroup>
+                          <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
+                          <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
                         </select>
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                       <span style={{ fontSize: 10, fontWeight: 600, color: entryStaff?.color || "#94a3b8" }}>{entryStaff?.name}</span>
                       <InsBadge type={entryIns} />
-                      <span style={{ fontSize: 9, color: "#94a3b8" }}>{entryCode}</span>
+                      <span style={{ fontSize: 9, color: "#94a3b8" }}>{getCodeShort(entryCode)}</span>
                     </div>
                   </div>
                 );
@@ -222,7 +222,7 @@ export default function UserDetailPanel({ user, visits, onClose, onSave, onDelet
                       <div style={{ fontSize: 12, fontWeight: 600, color: "#1e293b", minWidth: 32 }}>{DAYS[v.day]}曜</div>
                       <div style={{ fontSize: 12, color: "#475569" }}>{v.startHour}:00〜</div>
                       <div style={{ fontSize: 11, color: "#64748b" }}>{vs?.name}</div>
-                      <div style={{ fontSize: 9, color: "#94a3b8" }}>{v.serviceCode}</div>
+                      <div style={{ fontSize: 9, color: "#94a3b8" }}>{getCodeShort(v.serviceCode)}</div>
                       <div style={{ marginLeft: "auto" }}><StBadge status={v.status} /></div>
                     </div>
                   );

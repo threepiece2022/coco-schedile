@@ -8,16 +8,16 @@ const fmtDur = (d) => d < 1 ? `${d * 60}分` : Number.isInteger(d) ? `${d}時間
 
 const EMPTY_USER = {
   name: "", address: "", area: "柏エリア",
-  insuranceType: "介護", serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）",
+  insuranceType: "介護", serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）",
   frequency: 1,
-  regularSchedule: [{ day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）", insuranceType: "介護", duration: 1 }],
+  regularSchedule: [{ day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）", insuranceType: "介護", duration: 1 }],
   staffId: 1, notes: "",
 };
 
 export default function AddUserModal({ onClose, onSave }) {
   const [form, setForm] = useState({ ...EMPTY_USER });
   const [schedules, setSchedules] = useState([
-    { day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）", insuranceType: "介護", duration: 1 },
+    { day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）", insuranceType: "介護", duration: 1 },
   ]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -108,8 +108,8 @@ export default function AddUserModal({ onClose, onSave }) {
                         ))}
                       </div>
                       <select value={s.serviceCode} onChange={(e) => setSchedCode(i, e.target.value)} style={{ ...sty, flex: 2, fontSize: 10 }}>
-                        <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.code} - {c.label}</option>)}</optgroup>
-                        <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.code} - {c.label}</option>)}</optgroup>
+                        <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
+                        <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
                       </select>
                     </div>
                   </div>
