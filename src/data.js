@@ -11,30 +11,33 @@ export const STAFF = [
 
 export const SERVICE_CODES = {
   kaigo: [
-    { code: "1311", label: "訪看I1（20分未満）", insurance: "介護" },
-    { code: "1312", label: "訪看I2（30分未満）", insurance: "介護" },
-    { code: "1313", label: "訪看I3（30分〜1時間未満）", insurance: "介護" },
-    { code: "1314", label: "訪看I4（1時間〜1時間半未満）", insurance: "介護" },
-    { code: "1315", label: "訪看I5（理学療法士等・20分）", insurance: "介護" },
-    { code: "1316", label: "訪看I5-2（理学療法士等・40分）", insurance: "介護" },
-    { code: "1411", label: "予防訪看I1（20分未満）", insurance: "介護" },
-    { code: "1412", label: "予防訪看I2（30分未満）", insurance: "介護" },
-    { code: "1413", label: "予防訪看I3（30分〜1時間未満）", insurance: "介護" },
-    { code: "1414", label: "予防訪看I5（理学療法士等・20分）", insurance: "介護" },
+    { code: "1311", label: "訪看I1（20分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1312", label: "訪看I2（30分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1313", label: "訪看I3（30分〜1時間未満）", insurance: "介護", duration: 1 },
+    { code: "1314", label: "訪看I4（1時間〜1時間半未満）", insurance: "介護", duration: 1.5 },
+    { code: "1315", label: "訪看I5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
+    { code: "1316", label: "訪看I5-2（理学療法士等・40分）", insurance: "介護", duration: 1 },
+    { code: "1411", label: "予防訪看I1（20分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1412", label: "予防訪看I2（30分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1413", label: "予防訪看I3（30分〜1時間未満）", insurance: "介護", duration: 1 },
+    { code: "1414", label: "予防訪看I5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
   ],
   iryo: [
-    { code: "C005", label: "訪問看護基本療養費(I)", insurance: "医療" },
-    { code: "C005-2", label: "訪問看護基本療養費(II)", insurance: "医療" },
-    { code: "C006", label: "精神科訪問看護基本療養費", insurance: "医療" },
-    { code: "C007", label: "訪問看護管理療養費", insurance: "医療" },
-    { code: "C008", label: "訪問看護情報提供療養費", insurance: "医療" },
-    { code: "C009", label: "訪問看護ターミナルケア療養費", insurance: "医療" },
-    { code: "C010", label: "24時間対応体制加算", insurance: "医療" },
-    { code: "C011", label: "特別管理加算", insurance: "医療" },
+    { code: "C005", label: "訪問看護基本療養費(I)", insurance: "医療", duration: 1.5 },
+    { code: "C005-2", label: "訪問看護基本療養費(II)", insurance: "医療", duration: 1.5 },
+    { code: "C006", label: "精神科訪問看護基本療養費", insurance: "医療", duration: 1.5 },
+    { code: "C007", label: "訪問看護管理療養費", insurance: "医療", duration: 1 },
+    { code: "C008", label: "訪問看護情報提供療養費", insurance: "医療", duration: 1 },
+    { code: "C009", label: "訪問看護ターミナルケア療養費", insurance: "医療", duration: 1.5 },
+    { code: "C010", label: "24時間対応体制加算", insurance: "医療", duration: 1 },
+    { code: "C011", label: "特別管理加算", insurance: "医療", duration: 1 },
   ],
 };
 
 export const ALL_CODES = [...SERVICE_CODES.kaigo, ...SERVICE_CODES.iryo];
+
+/** サービスコードからデフォルトdurationを取得 */
+export const getCodeDuration = (code) => ALL_CODES.find((c) => c.code === code)?.duration ?? 1;
 
 export const HOURS = Array.from({ length: 10 }, (_, i) => i + 8); // 8:00-17:00
 export const DAYS = ["月", "火", "水", "木", "金", "土", "日"];
@@ -78,7 +81,7 @@ export const INITIAL_USERS = Array.from({ length: 80 }, (_, i) => {
       const entryIns = idx % 3 === 0 ? ins : ins; // keep same insurance by default
       const entryCodes = entryIns === "介護" ? SERVICE_CODES.kaigo : SERVICE_CODES.iryo;
       const entrySc = entryCodes[(i + idx) % entryCodes.length];
-      return { ...p, staffId: sid, serviceCode: entrySc.code, serviceLabel: entrySc.label, insuranceType: entryIns };
+      return { ...p, staffId: sid, serviceCode: entrySc.code, serviceLabel: entrySc.label, insuranceType: entryIns, duration: entrySc.duration };
     }),
     staffId: defaultStaffId,
     notes: i % 7 === 0 ? "独居・見守り強化" : i % 5 === 0 ? "医療処置あり" : "",
@@ -94,6 +97,7 @@ export function generateVisits(usersData) {
       const serviceCode = s.serviceCode ?? u.serviceCode;
       const serviceLabel = s.serviceLabel ?? u.serviceLabel;
       const insuranceType = s.insuranceType ?? u.insuranceType;
+      const duration = s.duration ?? getCodeDuration(serviceCode);
       v.push({
         id: id++,
         staffId,
@@ -102,7 +106,7 @@ export function generateVisits(usersData) {
         area: u.area,
         day: s.day,
         startHour: s.hour,
-        duration: insuranceType === "医療" ? 1.5 : 1,
+        duration,
         type: serviceLabel.includes("理学") ? "リハビリ" : insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
         serviceCode,
         insuranceType,

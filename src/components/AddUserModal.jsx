@@ -1,20 +1,23 @@
 import React, { useState } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS } from "../data.js";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, getCodeDuration } from "../data.js";
 import { InsBadge, Section } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
+
+const DURATION_OPTIONS = [0.5, 1, 1.5, 2];
+const fmtDur = (d) => d < 1 ? `${d * 60}分` : Number.isInteger(d) ? `${d}時間` : `${Math.floor(d)}時間${(d % 1) * 60}分`;
 
 const EMPTY_USER = {
   name: "", address: "", area: "柏エリア",
   insuranceType: "介護", serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）",
   frequency: 1,
-  regularSchedule: [{ day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）", insuranceType: "介護" }],
+  regularSchedule: [{ day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）", insuranceType: "介護", duration: 1 }],
   staffId: 1, notes: "",
 };
 
 export default function AddUserModal({ onClose, onSave }) {
   const [form, setForm] = useState({ ...EMPTY_USER });
   const [schedules, setSchedules] = useState([
-    { day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）", insuranceType: "介護" },
+    { day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看I3（30分〜1時間未満）", insuranceType: "介護", duration: 1 },
   ]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -25,6 +28,7 @@ export default function AddUserModal({ onClose, onSave }) {
         day: schedules.length, hour: 9,
         staffId: form.staffId, serviceCode: form.serviceCode,
         serviceLabel: form.serviceLabel, insuranceType: form.insuranceType,
+        duration: getCodeDuration(form.serviceCode),
       }]);
     }
   };
@@ -33,7 +37,7 @@ export default function AddUserModal({ onClose, onSave }) {
 
   const setSchedCode = (i, code) => {
     const sc = ALL_CODES.find((c) => c.code === code);
-    if (sc) setSchedules(schedules.map((s, j) => j === i ? { ...s, serviceCode: sc.code, serviceLabel: sc.label, insuranceType: sc.insurance } : s));
+    if (sc) setSchedules(schedules.map((s, j) => j === i ? { ...s, serviceCode: sc.code, serviceLabel: sc.label, insuranceType: sc.insurance, duration: sc.duration } : s));
   };
 
   const handleSave = () => {
@@ -69,7 +73,7 @@ export default function AddUserModal({ onClose, onSave }) {
                 const insColor = s.insuranceType === "医療";
                 return (
                   <div key={i} style={{ padding: "8px 12px", background: insColor ? "#fffbeb" : "#f8fafc", borderRadius: 8, border: `1px solid ${insColor ? "#fde68a" : "#f1f5f9"}` }}>
-                    {/* Row 1: number, day, time, delete */}
+                    {/* Row 1: number, day, time, duration, delete */}
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", minWidth: 20 }}>{i + 1}.</span>
                       <select value={s.day} onChange={(e) => setSched(i, "day", Number(e.target.value))} style={{ ...sty, flex: 1 }}>
@@ -77,6 +81,9 @@ export default function AddUserModal({ onClose, onSave }) {
                       </select>
                       <select value={s.hour} onChange={(e) => setSched(i, "hour", Number(e.target.value))} style={{ ...sty, flex: 1 }}>
                         {HOURS.map((h) => <option key={h} value={h}>{h}:00</option>)}
+                      </select>
+                      <select value={s.duration} onChange={(e) => setSched(i, "duration", Number(e.target.value))} style={{ ...sty, width: 80, flex: "none", fontSize: 10, color: "#059669", fontWeight: 600 }}>
+                        {DURATION_OPTIONS.map((d) => <option key={d} value={d}>{fmtDur(d)}</option>)}
                       </select>
                       {schedules.length > 1 && <button onClick={() => rmSched(i)} style={{ border: "none", background: "#fee2e2", color: "#dc2626", borderRadius: 4, cursor: "pointer", padding: "4px 8px", fontSize: 11, fontWeight: 600 }}>✕</button>}
                     </div>
@@ -90,7 +97,7 @@ export default function AddUserModal({ onClose, onSave }) {
                           <button key={t} onClick={() => {
                             const codes = t === "介護" ? SERVICE_CODES.kaigo : SERVICE_CODES.iryo;
                             const sc = codes[0];
-                            setSchedules(schedules.map((ss, j) => j === i ? { ...ss, insuranceType: t, serviceCode: sc.code, serviceLabel: sc.label } : ss));
+                            setSchedules(schedules.map((ss, j) => j === i ? { ...ss, insuranceType: t, serviceCode: sc.code, serviceLabel: sc.label, duration: sc.duration } : ss));
                           }}
                             style={{
                               padding: "3px 8px", border: `1.5px solid ${s.insuranceType === t ? (t === "医療" ? "#f59e0b" : "#3b82f6") : "#e2e8f0"}`,

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, INITIAL_USERS, generateVisits } from "./data.js";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, INITIAL_USERS, generateVisits, getCodeDuration } from "./data.js";
 import { InsBadge, StBadge } from "./components/ui.jsx";
 import { lbl, sty, navBtn } from "./styles.js";
 import UserDetailPanel from "./components/UserDetailPanel.jsx";
@@ -94,10 +94,10 @@ export default function App() {
       const serviceCode = s.serviceCode ?? form.serviceCode;
       const serviceLabel = s.serviceLabel ?? form.serviceLabel;
       const insuranceType = s.insuranceType ?? form.insuranceType;
+      const duration = s.duration ?? getCodeDuration(serviceCode);
       return {
         id: Date.now() + i, staffId, userId: newId, userName: form.name, area: form.area,
-        day: s.day, startHour: s.hour,
-        duration: insuranceType === "医療" ? 1.5 : 1,
+        day: s.day, startHour: s.hour, duration,
         type: serviceLabel.includes("理学") ? "リハビリ" : insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
         serviceCode, insuranceType, status: "予定",
       };
@@ -115,10 +115,10 @@ export default function App() {
         const serviceCode = s.serviceCode ?? form.serviceCode;
         const serviceLabel = s.serviceLabel ?? form.serviceLabel;
         const insuranceType = s.insuranceType ?? form.insuranceType;
+        const duration = s.duration ?? getCodeDuration(serviceCode);
         return {
           id: Date.now() + i, staffId, userId: form.id, userName: form.name, area: form.area,
-          day: s.day, startHour: s.hour,
-          duration: insuranceType === "医療" ? 1.5 : 1,
+          day: s.day, startHour: s.hour, duration,
           type: serviceLabel.includes("理学") ? "リハビリ" : insuranceType === "医療" ? "医療訪問看護" : "訪問看護",
           serviceCode, insuranceType, status: "予定",
         };
