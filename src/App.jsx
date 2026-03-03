@@ -120,19 +120,24 @@ export default function App() {
     (insF === "all" || u.insuranceType === insF)
   );
 
+  const [dragPreview, setDragPreview] = useState(null); // { staffId, hour }
   const onDS = useCallback((e, v) => { setDragV(v); e.dataTransfer.effectAllowed = "move"; }, []);
+  const calcDropHour = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const rawMin = ratio * HOURS.length * 60;
+    return HOURS[0] + Math.round(rawMin / 5) * 5 / 60;
+  };
   const onDrop = useCallback((e, day, hour, sid) => {
     e.preventDefault(); if (!dragV) return;
     if (calendarMode === "day") {
-      // 日次モード: 一時調整として保存（定期スケジュールは変更しない）
       const d = new Date(); d.setDate(d.getDate() + dayOff);
       const dk = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
       setDayAdj((prev) => ({ ...prev, [`${dk}:${dragV.id}`]: { startHour: hour, staffId: sid || dragV.staffId } }));
     } else {
-      // 週次モード: 定期スケジュールを直接変更
       setVisits((p) => p.map((v) => v.id === dragV.id ? { ...v, day, startHour: hour, ...(sid ? { staffId: sid } : {}) } : v));
     }
-    setDragV(null);
+    setDragV(null); setDragPreview(null);
   }, [dragV, calendarMode, dayOff]);
 
   const save = () => {
@@ -374,18 +379,25 @@ export default function App() {
                           <div key={`gl-${s.id}-${h}-half`} style={{ borderLeft: "1px dashed #e2e8f0" }} />,
                         ])}
                       </div>
-                      {/* ドロップターゲット（5分刻み） */}
-                      <div style={{ position: "absolute", inset: 0, background: dragV ? "#f0fdf408" : "transparent" }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const ratio = (e.clientX - rect.left) / rect.width;
-                          const rawMin = ratio * HOURS.length * 60;
-                          const snapped = Math.round(rawMin / 5) * 5;
-                          const hour = HOURS[0] + snapped / 60;
-                          onDrop(e, selDow, hour, s.id);
-                        }}
-                      />
+                      {/* ドロップターゲット（5分刻み）+ プレビュー */}
+                      <div style={{ position: "absolute", inset: 0 }}
+                        onDragOver={(e) => { e.preventDefault(); const h = calcDropHour(e); setDragPreview({ staffId: s.id, hour: h }); }}
+                        onDragLeave={() => setDragPreview((p) => p?.staffId === s.id ? null : p)}
+                        onDrop={(e) => { const h = calcDropHour(e); onDrop(e, selDow, h, s.id); }}
+                      >
+                        {dragV && dragPreview?.staffId === s.id && (() => {
+                          const ph = dragPreview.hour;
+                          const dur = dragV.duration;
+                          const pLeft = ((ph - HOURS[0]) / HOURS.length) * 100;
+                          const pWidth = (dur / HOURS.length) * 100;
+                          const mm = `${Math.floor(ph)}:${String(Math.round((ph % 1) * 60)).padStart(2, "0")}`;
+                          return (
+                            <div style={{ position: "absolute", left: `${pLeft}%`, width: `${pWidth}%`, top: 0, bottom: 0, background: "#3b82f618", border: "2px dashed #3b82f6", borderRadius: 6, zIndex: 1, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: "#3b82f6", background: "white", padding: "1px 6px", borderRadius: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>{mm}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
                       {/* 訪問カード（duration に応じた幅） */}
                       {staffVisits.map((v) => {
                         const left = ((v.startHour - HOURS[0]) / HOURS.length) * 100;
