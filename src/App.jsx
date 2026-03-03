@@ -6,6 +6,7 @@ import UserDetailPanel from "./components/UserDetailPanel.jsx";
 import AddUserModal from "./components/AddUserModal.jsx";
 import AvailabilityPanel from "./components/AvailabilityPanel.jsx";
 import RegularSchedulePanel from "./components/RegularSchedulePanel.jsx";
+import CsvModal from "./components/CsvModal.jsx";
 
 const insColor = (ins) => ins === "医療"
   ? { bg: "#fffbeb", border: "#f59e0b", text: "#92400e", left: "#d97706" }
@@ -77,6 +78,7 @@ export default function App() {
   const [wOff, setWOff] = useState(0);
   const [insF, setInsF] = useState("all");
   const [regSchedOpen, setRegSchedOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState("day");
   const [dayOff, setDayOff] = useState(0);
   const [dayAdj, setDayAdj] = useState(() => loadState("coco_dayAdj", {})); // { "YYYY-M-D:visitId": { startHour, staffId } }
@@ -214,6 +216,35 @@ export default function App() {
     setViewUser(null);
   };
 
+  const importUsers = (importedUsers, mergeMode) => {
+    if (mergeMode === "replace") {
+      // 全件置換: IDを振り直す
+      const newUsers = importedUsers.map((u, i) => ({ ...u, id: u.id || i + 1 }));
+      setUsers(newUsers);
+      setVisits(generateVisits(newUsers));
+    } else {
+      // 更新モード: ID一致で上書き＋新規追加
+      setUsers((prev) => {
+        const existingMap = new Map(prev.map((u) => [u.id, u]));
+        const nextId = prev.length > 0 ? Math.max(...prev.map((u) => u.id)) + 1 : 1;
+        let autoId = nextId;
+        const merged = [...prev];
+        for (const u of importedUsers) {
+          if (u.id && existingMap.has(u.id)) {
+            const idx = merged.findIndex((m) => m.id === u.id);
+            if (idx >= 0) merged[idx] = { ...u, id: u.id };
+          } else {
+            merged.push({ ...u, id: u.id || autoId++ });
+          }
+        }
+        const newUsers = merged;
+        setVisits(generateVisits(newUsers));
+        return newUsers;
+      });
+    }
+    setCsvOpen(false);
+  };
+
   const dayDow = calendarMode === "day" ? selDow : todayDow;
   const tVis = visits.filter((v) => v.day === dayDow).length;
 
@@ -334,6 +365,10 @@ export default function App() {
               <button onClick={() => setAvailOpen(true)}
                 style={{ padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#64748b" }}>
                 空き状況
+              </button>
+              <button onClick={() => setCsvOpen(true)}
+                style={{ padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#64748b" }}>
+                CSV入出力
               </button>
             </div>
           </div>
@@ -527,6 +562,7 @@ export default function App() {
       {addUserOpen && <AddUserModal onClose={() => setAddUserOpen(false)} onSave={addUser} />}
       {availOpen && <AvailabilityPanel visits={visits} onClose={() => setAvailOpen(false)} />}
       {regSchedOpen && <RegularSchedulePanel users={users} visits={visits} onClose={() => setRegSchedOpen(false)} />}
+      {csvOpen && <CsvModal users={users} onClose={() => setCsvOpen(false)} onImport={importUsers} />}
     </div>
   );
 }
