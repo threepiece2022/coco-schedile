@@ -5,14 +5,17 @@ import { lbl, sty, navBtn } from "./styles.js";
 import UserDetailPanel from "./components/UserDetailPanel.jsx";
 import AddUserModal from "./components/AddUserModal.jsx";
 import AvailabilityPanel from "./components/AvailabilityPanel.jsx";
+import RegularSchedulePanel from "./components/RegularSchedulePanel.jsx";
 
-const VCard = ({ visit, staff, isDrag, onDS, onEdit }) => {
+const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode }) => {
   const h = visit.duration * 56 - 4;
   const m = visit.insuranceType === "医療";
   return (
     <div draggable onDragStart={(e) => onDS(e, visit)} onClick={() => onEdit(visit)}
       style={{
-        position: "absolute", top: 2, left: 2, right: 2, height: h,
+        ...(flexMode
+          ? { flex: "1 1 0", minWidth: 0, height: h }
+          : { position: "absolute", top: 2, left: 2, right: 2, height: h }),
         background: m ? `linear-gradient(135deg, #fef3c710, ${staff.color}08)` : `linear-gradient(135deg, ${staff.color}14, ${staff.color}06)`,
         border: `1.5px solid ${staff.color}35`, borderLeft: `3px solid ${m ? "#d97706" : staff.color}`,
         borderRadius: 6, padding: "3px 6px", cursor: "grab", opacity: isDrag ? 0.35 : 1,
@@ -22,10 +25,10 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit }) => {
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "scale(1)"; }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 3, lineHeight: 1.3 }}>
-        <span style={{ fontWeight: 700, color: staff.color, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{visit.userName}</span>
+        <span style={{ fontWeight: 700, color: staff.color, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: flexMode ? 9 : 11 }}>{flexMode ? visit.userName.slice(-3) : visit.userName}</span>
         <InsBadge type={visit.insuranceType} />
       </div>
-      {visit.duration >= 1 && (
+      {!flexMode && visit.duration >= 1 && (
         <div style={{ display: "flex", gap: 3, alignItems: "center", marginTop: 2 }}>
           <span style={{ color: "#94a3b8", fontSize: 9 }}>{visit.serviceCode}</span>
           <StBadge status={visit.status} />
@@ -50,6 +53,7 @@ export default function App() {
   const [wOff, setWOff] = useState(0);
   const [insF, setInsF] = useState("all");
   const [showAvail, setShowAvail] = useState(true);
+  const [regSchedOpen, setRegSchedOpen] = useState(false);
 
   const today = new Date();
   const mon = new Date(today);
@@ -240,6 +244,21 @@ export default function App() {
                 {selStaff && ` · ${STAFF.find((s) => s.id === selStaff)?.name}`}
                 {selUser && ` · ${users.find((u) => u.id === selUser)?.name}`}
               </span>
+              {showAvail && !selStaff && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9 }}>
+                  {[
+                    { bg: "#f0fdf4", color: "#16a34a", label: "余裕" },
+                    { bg: "#fefce8", color: "#ca8a04", label: "やや混" },
+                    { bg: "#fff7ed", color: "#ea580c", label: "混雑" },
+                    { bg: "#fef2f2", color: "#dc2626", label: "逼迫" },
+                  ].map((l) => (
+                    <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: 2, background: l.bg, border: `1px solid ${l.color}30` }} />
+                      <span style={{ color: l.color, fontWeight: 600 }}>{l.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <button onClick={() => setShowAvail((v) => !v)}
                 style={{
                   padding: "4px 10px", border: `1.5px solid ${showAvail ? "#86efac" : "#e2e8f0"}`, borderRadius: 6,
@@ -247,6 +266,10 @@ export default function App() {
                   color: showAvail ? "#059669" : "#94a3b8", transition: "all 0.15s",
                 }}>
                 {showAvail ? "🟢 空き表示ON" : "⚪ 空き表示OFF"}
+              </button>
+              <button onClick={() => setRegSchedOpen(true)}
+                style={{ padding: "4px 12px", border: "1px solid #93c5fd", borderRadius: 6, background: "#eff6ff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#2563eb" }}>
+                📅 定期スケジュール一覧
               </button>
               <button onClick={() => setAvailOpen(true)}
                 style={{ padding: "4px 12px", border: "1px solid #86efac", borderRadius: 6, background: "#ecfdf5", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#059669" }}>
@@ -285,19 +308,21 @@ export default function App() {
                   return (
                     <div key={`${di}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, di, h, selStaff)}
                       style={{ borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", height: 56, position: "relative",
-                        background: isT ? "#fafbff" : dragV ? "#f0fdf4" : (showAvail && !selStaff ? availBg : "white") }}>
-                      {cv.map((v) => { const st = STAFF.find((s) => s.id === v.staffId); return <VCard key={v.id} visit={v} staff={st} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} />; })}
+                        background: isT ? "#fafbff" : dragV ? "#f0fdf4" : (showAvail && !selStaff ? availBg : "white"),
+                        ...(!selStaff && cv.length > 0 ? { display: "flex", gap: 1, padding: "2px 1px", overflowY: "visible" } : {}),
+                      }}>
+                      {cv.map((v) => { const st = STAFF.find((s) => s.id === v.staffId); return <VCard key={v.id} visit={v} staff={st} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={!selStaff} />; })}
                       {/* 空きスタッフ数インジケーター */}
                       {showAvail && !selStaff && cv.length === 0 && (
                         <div style={{
                           position: "absolute", inset: 0, display: "flex", flexDirection: "column",
                           alignItems: "center", justifyContent: "center", pointerEvents: "none",
                         }}>
+                          <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 500, lineHeight: 1, marginBottom: 1 }}>空き</span>
                           <span style={{
                             fontSize: 14, fontWeight: 800, lineHeight: 1,
                             color: freeRatio >= 0.75 ? "#16a34a" : freeRatio >= 0.5 ? "#ca8a04" : freeRatio >= 0.25 ? "#ea580c" : "#dc2626",
-                          }}>{freeCount}</span>
-                          <span style={{ fontSize: 8, color: "#94a3b8", fontWeight: 500 }}>空き</span>
+                          }}>{freeCount}<span style={{ fontSize: 10, fontWeight: 600 }}>/{STAFF.length}</span></span>
                         </div>
                       )}
                       {/* 予定ありセルにも小さく空き表示 */}
@@ -305,8 +330,9 @@ export default function App() {
                         <div style={{
                           position: "absolute", bottom: 1, right: 3, fontSize: 8, fontWeight: 700, pointerEvents: "none",
                           color: freeRatio >= 0.5 ? "#16a34a" : freeRatio >= 0.25 ? "#ca8a04" : "#dc2626",
-                          opacity: 0.7,
-                        }}>空{freeCount}</div>
+                          background: freeRatio >= 0.5 ? "#ecfdf520" : freeRatio >= 0.25 ? "#fef3c720" : "#fef2f220",
+                          padding: "0px 3px", borderRadius: 3, lineHeight: "14px",
+                        }}>空{freeCount}/{STAFF.length}</div>
                       )}
                     </div>
                   );
@@ -353,6 +379,7 @@ export default function App() {
       {viewUser && <UserDetailPanel user={viewUser} visits={visits} onClose={() => setViewUser(null)} />}
       {addUserOpen && <AddUserModal onClose={() => setAddUserOpen(false)} onSave={addUser} />}
       {availOpen && <AvailabilityPanel visits={visits} onClose={() => setAvailOpen(false)} />}
+      {regSchedOpen && <RegularSchedulePanel users={users} visits={visits} onClose={() => setRegSchedOpen(false)} />}
     </div>
   );
 }
