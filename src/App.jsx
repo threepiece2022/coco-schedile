@@ -130,15 +130,10 @@ export default function App() {
   };
   const onDrop = useCallback((e, day, hour, sid) => {
     e.preventDefault(); if (!dragV) return;
-    if (calendarMode === "day") {
-      const d = new Date(); d.setDate(d.getDate() + dayOff);
-      const dk = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-      setDayAdj((prev) => ({ ...prev, [`${dk}:${dragV.id}`]: { startHour: hour, staffId: sid || dragV.staffId } }));
-    } else {
-      setVisits((p) => p.map((v) => v.id === dragV.id ? { ...v, day, startHour: hour, ...(sid ? { staffId: sid } : {}) } : v));
-    }
+    // 常にvisitsを直接更新（localStorageに自動保存される）
+    setVisits((p) => p.map((v) => v.id === dragV.id ? { ...v, day, startHour: hour, ...(sid ? { staffId: sid } : {}) } : v));
     setDragV(null); setDragPreview(null);
-  }, [dragV, calendarMode, dayOff]);
+  }, [dragV]);
 
   const save = () => {
     if (!editV) return;
@@ -371,7 +366,7 @@ export default function App() {
                           <div style={{ fontSize: 9, color: "#94a3b8" }}>{dayCt}件</div>
                         </div>
                       </div>
-                    <div style={{ position: "relative", height: 56, borderBottom: "1px solid #e2e8f0" }}>
+                    <div style={{ position: "relative", height: 56, borderBottom: "1px solid #e2e8f0", overflow: "visible" }}>
                       {/* 時間グリッド線（表示用） */}
                       <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${HOURS.length * 2}, 1fr)`, pointerEvents: "none" }}>
                         {HOURS.flatMap((h) => [
@@ -392,8 +387,8 @@ export default function App() {
                           const pWidth = (dur / HOURS.length) * 100;
                           const mm = `${Math.floor(ph)}:${String(Math.round((ph % 1) * 60)).padStart(2, "0")}`;
                           return (
-                            <div style={{ position: "absolute", left: `${pLeft}%`, width: `${pWidth}%`, top: -1, bottom: -1, background: "#3b82f625", border: "2px dashed #3b82f6", borderRadius: 6, zIndex: 10, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, color: "white", background: "#3b82f6", padding: "2px 8px", borderRadius: 4, boxShadow: "0 2px 8px rgba(59,130,246,0.4)" }}>{mm}</span>
+                            <div style={{ position: "absolute", left: `${pLeft}%`, width: `${pWidth}%`, top: 0, bottom: 0, background: "#3b82f620", border: "2px dashed #3b82f6", borderRadius: 6, zIndex: 10, pointerEvents: "none" }}>
+                              <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: 2, fontSize: 11, fontWeight: 800, color: "white", background: "#3b82f6", padding: "2px 8px", borderRadius: 4, boxShadow: "0 2px 8px rgba(59,130,246,0.4)", whiteSpace: "nowrap", zIndex: 20 }}>{mm}</div>
                             </div>
                           );
                         })()}
