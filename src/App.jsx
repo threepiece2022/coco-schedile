@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, INITIAL_USERS, generateVisits, getCodeDuration } from "./data.js";
+import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration } from "./data.js";
 import { InsBadge, StBadge } from "./components/ui.jsx";
 import { lbl, sty, navBtn } from "./styles.js";
 import UserDetailPanel from "./components/UserDetailPanel.jsx";
@@ -54,6 +54,8 @@ export default function App() {
   const [insF, setInsF] = useState("all");
   const [showAvail, setShowAvail] = useState(true);
   const [regSchedOpen, setRegSchedOpen] = useState(false);
+  const [calendarMode, setCalendarMode] = useState("day");
+  const [dayOff, setDayOff] = useState(0);
 
   const today = new Date();
   const mon = new Date(today);
@@ -61,6 +63,12 @@ export default function App() {
   const wDates = DAYS.map((_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; });
   const wLabel = `${mon.getFullYear()}年${mon.getMonth() + 1}月${mon.getDate()}日〜`;
   const todayDow = (today.getDay() + 6) % 7;
+
+  // 日次ビュー用
+  const selDate = new Date(today);
+  selDate.setDate(today.getDate() + dayOff);
+  const selDow = (selDate.getDay() + 6) % 7; // 0=月
+  const selDateLabel = `${selDate.getFullYear()}年${selDate.getMonth() + 1}月${selDate.getDate()}日（${DAY_FULL[selDow]}）`;
 
   const fv = visits.filter((v) => {
     if (insF !== "all" && v.insuranceType !== insF) return false;
@@ -134,7 +142,8 @@ export default function App() {
     setViewUser(null);
   };
 
-  const tVis = visits.filter((v) => v.day === todayDow).length;
+  const dayDow = calendarMode === "day" ? selDow : todayDow;
+  const tVis = visits.filter((v) => v.day === dayDow).length;
   const kC = visits.filter((v) => v.insuranceType === "介護").length;
   const iC = visits.filter((v) => v.insuranceType === "医療").length;
 
@@ -155,7 +164,7 @@ export default function App() {
         </div>
         <div style={{ display: "flex", gap: 10, fontSize: 12, alignItems: "center" }}>
           {[
-            { v: tVis, l: "本日" },
+            { v: tVis, l: calendarMode === "day" && dayOff !== 0 ? "選択日" : "本日" },
             { v: visits.length, l: "今週合計" },
             { v: kC, l: "介護保険", c: "#93c5fd" },
             { v: iC, l: "医療保険", c: "#fcd34d" },
@@ -267,10 +276,23 @@ export default function App() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 20px", background: "white", borderBottom: "1px solid #e2e8f0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button onClick={() => setWOff((w) => w - 1)} style={navBtn}>◀</button>
-              <button onClick={() => setWOff(0)} style={{ ...navBtn, background: wOff === 0 ? "#0f172a" : "white", color: wOff === 0 ? "white" : "#1e293b", fontWeight: 600 }}>今週</button>
-              <button onClick={() => setWOff((w) => w + 1)} style={navBtn}>▶</button>
-              <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 8 }}>{wLabel}</span>
+              {calendarMode === "day" ? (<>
+                <button onClick={() => setDayOff((d) => d - 1)} style={navBtn}>◀</button>
+                <button onClick={() => setDayOff(0)} style={{ ...navBtn, background: dayOff === 0 ? "#0f172a" : "white", color: dayOff === 0 ? "white" : "#1e293b", fontWeight: 600 }}>今日</button>
+                <button onClick={() => setDayOff((d) => d + 1)} style={navBtn}>▶</button>
+                <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 8 }}>{selDateLabel}</span>
+              </>) : (<>
+                <button onClick={() => setWOff((w) => w - 1)} style={navBtn}>◀</button>
+                <button onClick={() => setWOff(0)} style={{ ...navBtn, background: wOff === 0 ? "#0f172a" : "white", color: wOff === 0 ? "white" : "#1e293b", fontWeight: 600 }}>今週</button>
+                <button onClick={() => setWOff((w) => w + 1)} style={navBtn}>▶</button>
+                <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 8 }}>{wLabel}</span>
+              </>)}
+              <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 8, padding: 3, marginLeft: 12 }}>
+                {[["day", "日"], ["week", "週"]].map(([k, l]) => (
+                  <button key={k} onClick={() => setCalendarMode(k)}
+                    style={{ padding: "4px 12px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, background: calendarMode === k ? "white" : "transparent", color: calendarMode === k ? "#0f172a" : "#94a3b8", boxShadow: calendarMode === k ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>{l}</button>
+                ))}
+              </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 11, color: "#64748b" }}>
@@ -313,66 +335,110 @@ export default function App() {
           </div>
 
           <div style={{ flex: 1, overflow: "auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "54px repeat(7, 1fr)", minWidth: 800 }}>
-              <div style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }} />
-              {DAYS.map((d, i) => {
-                const dt = wDates[i]; const isT = wOff === 0 && i === todayDow;
-                return (
-                  <div key={d} style={{ textAlign: "center", padding: "6px 4px", borderBottom: "2px solid #e2e8f0", borderLeft: "1px solid #f1f5f9", background: isT ? "#eff6ff" : "#f8fafc" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: i >= 5 ? "#ef4444" : isT ? "#1d4ed8" : "#64748b" }}>{d}</div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: isT ? "white" : "#1e293b", ...(isT ? { background: "#1d4ed8", borderRadius: "50%", width: 26, height: 26, lineHeight: "26px", margin: "2px auto" } : {}) }}>{dt.getDate()}</div>
-                  </div>
-                );
-              })}
-              {HOURS.map((h) => (<>
-                <div key={`t-${h}`} style={{ padding: "4px 4px", fontSize: 10, fontWeight: 600, color: "#94a3b8", borderBottom: "1px solid #f1f5f9", background: "#fafbfc", textAlign: "right", height: 56, boxSizing: "border-box" }}>{h}:00</div>
-                {DAYS.map((_, di) => {
-                  const cv = getCell(di, h, selStaff || null);
-                  const isT = wOff === 0 && di === todayDow;
-                  // 空きスタッフ計算
-                  const busyStaff = new Set(visits.filter((v) => v.day === di && v.startHour === h && v.status !== "キャンセル").map((v) => v.staffId));
-                  const freeCount = STAFF.length - busyStaff.size;
-                  const freeRatio = freeCount / STAFF.length;
-                  // 空きの背景色
-                  const availBg = !showAvail || selStaff ? "transparent" :
-                    freeRatio >= 0.75 ? "#f0fdf4" :
-                    freeRatio >= 0.5 ? "#fefce8" :
-                    freeRatio >= 0.25 ? "#fff7ed" :
-                    freeCount > 0 ? "#fef2f2" : "#fce4ec";
+            {calendarMode === "day" ? (
+              /* 日次ビュー: スタッフ列 × 時間行 */
+              <div style={{ display: "grid", gridTemplateColumns: `54px repeat(${STAFF.length}, 1fr)`, minWidth: 800 }}>
+                {/* ヘッダー: 空セル + スタッフ列 */}
+                <div style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }} />
+                {STAFF.map((s) => {
+                  const dayCt = fv.filter((v) => v.staffId === s.id && v.day === selDow).length;
+                  const isSelected = selStaff === s.id;
                   return (
-                    <div key={`${di}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, di, h, selStaff)}
-                      style={{ borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", height: 56, position: "relative",
-                        background: isT ? "#fafbff" : dragV ? "#f0fdf4" : (showAvail && !selStaff ? availBg : "white"),
-                        ...(!selStaff && cv.length > 0 ? { display: "flex", gap: 1, padding: "2px 1px", overflowY: "visible" } : {}),
-                      }}>
-                      {cv.map((v) => { const st = STAFF.find((s) => s.id === v.staffId); return <VCard key={v.id} visit={v} staff={st} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={!selStaff} />; })}
-                      {/* 空きスタッフ数インジケーター */}
-                      {showAvail && !selStaff && cv.length === 0 && (
-                        <div style={{
-                          position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                          alignItems: "center", justifyContent: "center", pointerEvents: "none",
-                        }}>
-                          <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 500, lineHeight: 1, marginBottom: 1 }}>空き</span>
-                          <span style={{
-                            fontSize: 14, fontWeight: 800, lineHeight: 1,
-                            color: freeRatio >= 0.75 ? "#16a34a" : freeRatio >= 0.5 ? "#ca8a04" : freeRatio >= 0.25 ? "#ea580c" : "#dc2626",
-                          }}>{freeCount}<span style={{ fontSize: 10, fontWeight: 600 }}>/{STAFF.length}</span></span>
-                        </div>
-                      )}
-                      {/* 予定ありセルにも小さく空き表示 */}
-                      {showAvail && !selStaff && cv.length > 0 && (
-                        <div style={{
-                          position: "absolute", bottom: 1, right: 3, fontSize: 8, fontWeight: 700, pointerEvents: "none",
-                          color: freeRatio >= 0.5 ? "#16a34a" : freeRatio >= 0.25 ? "#ca8a04" : "#dc2626",
-                          background: freeRatio >= 0.5 ? "#ecfdf520" : freeRatio >= 0.25 ? "#fef3c720" : "#fef2f220",
-                          padding: "0px 3px", borderRadius: 3, lineHeight: "14px",
-                        }}>空{freeCount}/{STAFF.length}</div>
-                      )}
+                    <div key={s.id} onClick={() => setSelStaff(selStaff === s.id ? null : s.id)}
+                      style={{ textAlign: "center", padding: "6px 4px", borderBottom: "2px solid #e2e8f0", borderLeft: "1px solid #f1f5f9", background: isSelected ? `${s.color}10` : "#f8fafc", cursor: "pointer" }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${s.color}18`, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, margin: "0 auto 2px" }}>{s.name[0]}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: isSelected ? s.color : "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                      <div style={{ fontSize: 9, color: "#94a3b8" }}>{dayCt}件</div>
                     </div>
                   );
                 })}
-              </>))}
-            </div>
+                {/* 時間行 */}
+                {HOURS.map((h) => (<>
+                  <div key={`dt-${h}`} style={{ padding: "4px 4px", fontSize: 10, fontWeight: 600, color: "#94a3b8", borderBottom: "1px solid #f1f5f9", background: "#fafbfc", textAlign: "right", height: 56, boxSizing: "border-box" }}>{h}:00</div>
+                  {STAFF.map((s) => {
+                    const cv = fv.filter((v) => v.day === selDow && v.startHour === h && v.staffId === s.id);
+                    const isEmpty = cv.length === 0;
+                    const isSelected = selStaff === s.id;
+                    return (
+                      <div key={`d-${s.id}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, selDow, h, s.id)}
+                        style={{
+                          borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", height: 56, position: "relative",
+                          background: isEmpty ? (dragV ? "#f0fdf420" : "#f0fdf408") : isSelected ? `${s.color}06` : "white",
+                        }}>
+                        {cv.map((v) => {
+                          const isHighlighted = selUser && v.userId === selUser;
+                          return (
+                            <div key={v.id} style={{ position: "relative" }}>
+                              <VCard visit={v} staff={s} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={false} />
+                              {isHighlighted && <div style={{ position: "absolute", inset: 0, border: "2px solid #f59e0b", borderRadius: 6, pointerEvents: "none" }} />}
+                            </div>
+                          );
+                        })}
+                        {isEmpty && <div style={{ position: "absolute", inset: 0, background: dragV ? "#dcfce740" : "transparent", transition: "background 0.15s" }} />}
+                      </div>
+                    );
+                  })}
+                </>))}
+              </div>
+            ) : (
+              /* 週次ビュー（既存） */
+              <div style={{ display: "grid", gridTemplateColumns: "54px repeat(7, 1fr)", minWidth: 800 }}>
+                <div style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }} />
+                {DAYS.map((d, i) => {
+                  const dt = wDates[i]; const isT = wOff === 0 && i === todayDow;
+                  return (
+                    <div key={d} style={{ textAlign: "center", padding: "6px 4px", borderBottom: "2px solid #e2e8f0", borderLeft: "1px solid #f1f5f9", background: isT ? "#eff6ff" : "#f8fafc" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: i >= 5 ? "#ef4444" : isT ? "#1d4ed8" : "#64748b" }}>{d}</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: isT ? "white" : "#1e293b", ...(isT ? { background: "#1d4ed8", borderRadius: "50%", width: 26, height: 26, lineHeight: "26px", margin: "2px auto" } : {}) }}>{dt.getDate()}</div>
+                    </div>
+                  );
+                })}
+                {HOURS.map((h) => (<>
+                  <div key={`t-${h}`} style={{ padding: "4px 4px", fontSize: 10, fontWeight: 600, color: "#94a3b8", borderBottom: "1px solid #f1f5f9", background: "#fafbfc", textAlign: "right", height: 56, boxSizing: "border-box" }}>{h}:00</div>
+                  {DAYS.map((_, di) => {
+                    const cv = getCell(di, h, selStaff || null);
+                    const isT = wOff === 0 && di === todayDow;
+                    const busyStaff = new Set(visits.filter((v) => v.day === di && v.startHour === h && v.status !== "キャンセル").map((v) => v.staffId));
+                    const freeCount = STAFF.length - busyStaff.size;
+                    const freeRatio = freeCount / STAFF.length;
+                    const availBg = !showAvail || selStaff ? "transparent" :
+                      freeRatio >= 0.75 ? "#f0fdf4" :
+                      freeRatio >= 0.5 ? "#fefce8" :
+                      freeRatio >= 0.25 ? "#fff7ed" :
+                      freeCount > 0 ? "#fef2f2" : "#fce4ec";
+                    return (
+                      <div key={`${di}-${h}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => onDrop(e, di, h, selStaff)}
+                        style={{ borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", height: 56, position: "relative",
+                          background: isT ? "#fafbff" : dragV ? "#f0fdf4" : (showAvail && !selStaff ? availBg : "white"),
+                          ...(!selStaff && cv.length > 0 ? { display: "flex", gap: 1, padding: "2px 1px", overflowY: "visible" } : {}),
+                        }}>
+                        {cv.map((v) => { const st = STAFF.find((s) => s.id === v.staffId); return <VCard key={v.id} visit={v} staff={st} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={!selStaff} />; })}
+                        {showAvail && !selStaff && cv.length === 0 && (
+                          <div style={{
+                            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                            alignItems: "center", justifyContent: "center", pointerEvents: "none",
+                          }}>
+                            <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 500, lineHeight: 1, marginBottom: 1 }}>空き</span>
+                            <span style={{
+                              fontSize: 14, fontWeight: 800, lineHeight: 1,
+                              color: freeRatio >= 0.75 ? "#16a34a" : freeRatio >= 0.5 ? "#ca8a04" : freeRatio >= 0.25 ? "#ea580c" : "#dc2626",
+                            }}>{freeCount}<span style={{ fontSize: 10, fontWeight: 600 }}>/{STAFF.length}</span></span>
+                          </div>
+                        )}
+                        {showAvail && !selStaff && cv.length > 0 && (
+                          <div style={{
+                            position: "absolute", bottom: 1, right: 3, fontSize: 8, fontWeight: 700, pointerEvents: "none",
+                            color: freeRatio >= 0.5 ? "#16a34a" : freeRatio >= 0.25 ? "#ca8a04" : "#dc2626",
+                            background: freeRatio >= 0.5 ? "#ecfdf520" : freeRatio >= 0.25 ? "#fef3c720" : "#fef2f220",
+                            padding: "0px 3px", borderRadius: 3, lineHeight: "14px",
+                          }}>空{freeCount}/{STAFF.length}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>))}
+              </div>
+            )}
           </div>
         </div>
       </div>
