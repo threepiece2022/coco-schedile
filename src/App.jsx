@@ -7,9 +7,13 @@ import AddUserModal from "./components/AddUserModal.jsx";
 import AvailabilityPanel from "./components/AvailabilityPanel.jsx";
 import RegularSchedulePanel from "./components/RegularSchedulePanel.jsx";
 
+const insColor = (ins) => ins === "医療"
+  ? { bg: "#fffbeb", border: "#f59e0b", text: "#92400e", left: "#d97706" }
+  : { bg: "#eff6ff", border: "#93c5fd", text: "#1e40af", left: "#3b82f6" };
+
 const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode }) => {
   const h = visit.duration * 56 - 4;
-  const m = visit.insuranceType === "医療";
+  const ic = insColor(visit.insuranceType);
   return (
     <div draggable onDragStart={(e) => onDS(e, visit)} onClick={() => onEdit(visit)}
       title={`${visit.userName} ${visit.startHour}:00〜 ${getCodeShort(visit.serviceCode)}`}
@@ -19,18 +23,17 @@ const VCard = ({ visit, staff, isDrag, onDS, onEdit, flexMode, hMode }) => {
           : flexMode
             ? { flex: "1 1 0", minWidth: 0, height: h }
             : { position: "absolute", top: 2, left: 2, right: 2, height: h }),
-        background: m ? `linear-gradient(135deg, #fef3c710, ${staff.color}08)` : `linear-gradient(135deg, ${staff.color}14, ${staff.color}06)`,
-        border: `1.5px solid ${staff.color}35`, borderLeft: `3px solid ${m ? "#d97706" : staff.color}`,
+        background: ic.bg,
+        border: `1px solid ${ic.border}`, borderLeft: `3px solid ${ic.left}`,
         borderRadius: 6, padding: "3px 6px", cursor: "grab", opacity: isDrag ? 0.35 : 1,
         transition: "box-shadow 0.15s, transform 0.15s", overflow: "hidden", zIndex: isDrag ? 100 : 1, fontSize: 11,
         boxSizing: "border-box",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 2px 8px ${staff.color}25`; e.currentTarget.style.transform = "scale(1.02)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 2px 8px ${ic.border}50`; e.currentTarget.style.transform = "scale(1.02)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "scale(1)"; }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 3, lineHeight: 1.3 }}>
-        <span style={{ fontWeight: 700, color: staff.color, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: flexMode ? 9 : 11 }}>{flexMode ? visit.userName.slice(-3) : visit.userName}</span>
-        <InsBadge type={visit.insuranceType} />
+        <span style={{ fontWeight: 700, color: ic.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: flexMode ? 9 : 11 }}>{flexMode ? visit.userName.slice(-3) : visit.userName}</span>
       </div>
       {!flexMode && !hMode && visit.duration >= 1 && (
         <div style={{ display: "flex", gap: 3, alignItems: "center", marginTop: 2 }}>
