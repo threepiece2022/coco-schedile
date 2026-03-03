@@ -392,8 +392,8 @@ export default function App() {
                           const pWidth = (dur / HOURS.length) * 100;
                           const mm = `${Math.floor(ph)}:${String(Math.round((ph % 1) * 60)).padStart(2, "0")}`;
                           return (
-                            <div style={{ position: "absolute", left: `${pLeft}%`, width: `${pWidth}%`, top: 0, bottom: 0, background: "#3b82f618", border: "2px dashed #3b82f6", borderRadius: 6, zIndex: 1, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: "#3b82f6", background: "white", padding: "1px 6px", borderRadius: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>{mm}</span>
+                            <div style={{ position: "absolute", left: `${pLeft}%`, width: `${pWidth}%`, top: -1, bottom: -1, background: "#3b82f625", border: "2px dashed #3b82f6", borderRadius: 6, zIndex: 10, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: "white", background: "#3b82f6", padding: "2px 8px", borderRadius: 4, boxShadow: "0 2px 8px rgba(59,130,246,0.4)" }}>{mm}</span>
                             </div>
                           );
                         })()}
