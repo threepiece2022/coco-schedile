@@ -34,7 +34,7 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
       }]);
     }
   };
-  const rmSched = (i) => { if (schedules.length > 1) setSchedules(schedules.filter((_, j) => j !== i)); };
+  const rmSched = (i) => setSchedules(schedules.filter((_, j) => j !== i));
   const setSched = (i, k, v) => setSchedules(schedules.map((s, j) => j === i ? { ...s, [k]: v } : s));
   const setSchedCode = (i, code) => {
     const sc = ALL_CODES.find((c) => c.code === code);
@@ -107,6 +107,11 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
 
             <Section icon="📅" title="定期訪問スケジュール" badge={`週${schedules.length}回`}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {schedules.length === 0 && (
+                  <div style={{ padding: "12px 14px", background: "#fffbeb", borderRadius: 8, border: "1px solid #fde68a", fontSize: 12, color: "#92400e", fontWeight: 600 }}>
+                    ⚠ 定期訪問スケジュールが未設定です。下の「＋ 訪問枠を追加」から追加してください。
+                  </div>
+                )}
                 {schedules.map((s, i) => {
                   const insColor = s.insuranceType === "医療";
                   return (
@@ -123,7 +128,7 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
                         <select value={s.duration} onChange={(e) => setSched(i, "duration", Number(e.target.value))} style={{ ...sty, width: 80, flex: "none", fontSize: 10, color: "#059669", fontWeight: 600 }}>
                           {DURATION_OPTIONS.map((d) => <option key={d} value={d}>{fmtDur(d)}</option>)}
                         </select>
-                        {schedules.length > 1 && <button onClick={() => rmSched(i)} style={{ border: "none", background: "#fee2e2", color: "#dc2626", borderRadius: 4, cursor: "pointer", padding: "4px 8px", fontSize: 11, fontWeight: 600 }}>✕</button>}
+                        <button onClick={() => rmSched(i)} style={{ border: "none", background: "#fee2e2", color: "#dc2626", borderRadius: 4, cursor: "pointer", padding: "4px 8px", fontSize: 11, fontWeight: 600 }}>✕</button>
                       </div>
                       {/* Row 2: staff, insurance toggle, service code */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 28 }}>
