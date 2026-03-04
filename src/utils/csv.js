@@ -127,10 +127,39 @@ export function generateUsersCsv(usersData) {
   return lines.join("\n");
 }
 
-/** 利用者CSVをパースしバリデーション（13列フォーマット） */
+/** 利用者CSVをパースしバリデーション（ヘッダー自動マッピング対応） */
 export function parseUsersCsv(text, validAreas, staff) {
   const { headers, rows } = parseCsv(text);
   if (rows.length === 0) return { data: [], errors: [{ row: 0, message: "データ行がありません" }] };
+
+  // ヘッダーから列インデックスを動的にマッピング
+  const COLUMN_ALIASES = {
+    "利用者名": ["利用者名", "名前"],
+    "フリガナ": ["フリガナ", "ふりがな", "カナ"],
+    "住所": ["住所"],
+    "エリア": ["エリア"],
+    "備考": ["備考", "メモ"],
+    "ステータス": ["ステータス", "状態"],
+    "介護度": ["介護度"],
+    "訪問曜日": ["訪問曜日", "曜日"],
+    "開始時間": ["開始時間", "時間"],
+    "担当者ID": ["担当者ID", "担当者id", "スタッフID"],
+    "サービスコード": ["サービスコード"],
+    "保険種別": ["保険種別", "保険"],
+    "時間(分)": ["時間(分)", "時間（分）", "所要時間"],
+  };
+  const colIdx = {};
+  const trimmedHeaders = headers.map((h) => h.replace(/^\uFEFF/, "").trim());
+  for (const [key, aliases] of Object.entries(COLUMN_ALIASES)) {
+    const idx = trimmedHeaders.findIndex((h) => aliases.includes(h));
+    colIdx[key] = idx >= 0 ? idx : null;
+  }
+  // フォールバック: ヘッダーなし or マッチしない場合はデフォルト順序
+  const defaultOrder = ["利用者名", "フリガナ", "住所", "エリア", "備考", "ステータス", "介護度", "訪問曜日", "開始時間", "担当者ID", "サービスコード", "保険種別", "時間(分)"];
+  const hasMapping = Object.values(colIdx).some((v) => v !== null);
+  if (!hasMapping) {
+    defaultOrder.forEach((key, i) => { colIdx[key] = i; });
+  }
 
   if (!validAreas) validAreas = ["柏エリア", "高塚エリア", "松戸エリア"];
   const validIns = ["介護", "医療", "自費"];
@@ -144,20 +173,23 @@ export function parseUsersCsv(text, validAreas, staff) {
     const rowNum = idx + 2;
     const rowErrors = [];
 
-    const get = (i) => (row[i] || "").trim();
-    const name = get(0);
-    const nameKana = get(1);
-    const address = get(2);
-    const area = get(3);
-    const notes = get(4);
-    const status = get(5);
-    const careLevel = get(6);
-    const visitDay = get(7);
-    const startHour = get(8) ? parseFloat(get(8)) : null;
-    const staffId = get(9) ? parseInt(get(9), 10) : null;
-    const serviceCodeRaw = get(10);
-    const ins = get(11);
-    const durationMin = get(12) ? parseFloat(get(12)) : null;
+    const get = (key) => { const i = colIdx[key]; return i != null ? (row[i] || "").trim() : ""; };
+    const name = get("利用者名");
+    const nameKana = get("フリガナ");
+    const address = get("住所");
+    const area = get("エリア");
+    const notes = get("備考");
+    const status = get("ステータス");
+    const careLevel = get("介護度");
+    const visitDay = get("訪問曜日");
+    const startHourRaw = get("開始時間");
+    const startHour = startHourRaw ? parseFloat(startHourRaw) : null;
+    const staffIdRaw = get("担当者ID");
+    const staffId = staffIdRaw ? parseInt(staffIdRaw, 10) : null;
+    const serviceCodeRaw = get("サービスコード");
+    const ins = get("保険種別");
+    const durationMinRaw = get("時間(分)");
+    const durationMin = durationMinRaw ? parseFloat(durationMinRaw) : null;
 
     // 利用者フィールドのバリデーション
     if (!name) rowErrors.push("利用者名が空です");
@@ -184,7 +216,7 @@ export function parseUsersCsv(text, validAreas, staff) {
       if (!validDays.has(visitDay)) {
         rowErrors.push(`訪問曜日「${visitDay}」は無効です`);
       } else if (startHour == null || startHour < 8 || startHour > 17) {
-        rowErrors.push(`開始時間「${get(7)}」は8〜17の数値が必要です`);
+        rowErrors.push(`開始時間「${startHourRaw}」は8〜17の数値が必要です`);
       } else if (durationMin != null && durationMin <= 0) {
         rowErrors.push(`時間「${durationMin}」は正の数値が必要です`);
       } else if (resolvedCode || !serviceCodeRaw) {
