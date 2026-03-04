@@ -3,10 +3,10 @@ import { STAFF, DAYS } from "../data.js";
 import { generateStaffCsv, generateUsersCsv, parseUsersCsv, downloadCsv } from "../utils/csv.js";
 import { lbl } from "../styles.js";
 
-export default function CsvModal({ users, areas, onClose, onImport }) {
+export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
   const [tab, setTab] = useState("export");
   const [file, setFile] = useState(null);
-  const [mergeMode, setMergeMode] = useState("merge"); // merge | replace
+  const [mergeMode, setMergeMode] = useState(isDemo ? "replace" : "merge"); // merge | replace
   const [parseResult, setParseResult] = useState(null); // { data, errors }
   const [importDone, setImportDone] = useState(false);
   const fileRef = useRef(null);
@@ -34,7 +34,7 @@ export default function CsvModal({ users, areas, onClose, onImport }) {
 
   const handleImport = () => {
     if (!parseResult || parseResult.data.length === 0) return;
-    if (mergeMode === "replace" && !window.confirm("全件置換すると既存の利用者データがすべて削除されます。よろしいですか？")) return;
+    if (mergeMode === "replace" && !isDemo && !window.confirm("全件置換すると既存の利用者データがすべて削除されます。よろしいですか？")) return;
     onImport(parseResult.data, mergeMode);
     setImportDone(true);
   };
@@ -106,16 +106,22 @@ export default function CsvModal({ users, areas, onClose, onImport }) {
               {/* マージモード選択 */}
               <div>
                 <label style={lbl}>インポートモード</label>
+                {isDemo && (
+                  <div style={{ padding: "8px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 6, marginBottom: 8, fontSize: 11, color: "#92400e" }}>
+                    現在デモデータを使用中のため、インポート時にデモデータは自動的に置換されます
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 8 }}>
                   {[
                     { value: "merge", label: "更新", desc: "名前+住所一致で上書き＋新規追加" },
                     { value: "replace", label: "全件置換", desc: "既存データを全削除して入れ替え" },
                   ].map((m) => (
-                    <button key={m.value} onClick={() => setMergeMode(m.value)}
+                    <button key={m.value} onClick={() => !isDemo && setMergeMode(m.value)}
                       style={{
                         flex: 1, padding: "10px 12px", border: `2px solid ${mergeMode === m.value ? "#3b82f6" : "#e2e8f0"}`,
-                        borderRadius: 8, cursor: "pointer", textAlign: "left",
+                        borderRadius: 8, cursor: isDemo ? "default" : "pointer", textAlign: "left",
                         background: mergeMode === m.value ? "#eff6ff" : "white",
+                        opacity: isDemo && m.value !== "replace" ? 0.5 : 1,
                       }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: mergeMode === m.value ? "#1d4ed8" : "#1e293b" }}>{m.label}</div>
                       <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{m.desc}</div>

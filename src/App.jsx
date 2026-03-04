@@ -88,6 +88,7 @@ export default function App() {
   const [insF, setInsF] = useState("all");
   const [regSchedOpen, setRegSchedOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
+  const [userDataImported, setUserDataImported] = useState(() => !!localStorage.getItem("coco_user_imported"));
   const [calendarMode, setCalendarMode] = useState("day");
   const [dayOff, setDayOff] = useState(0);
   const [dayAdj, setDayAdj] = useState(() => loadState("coco_dayAdj", {})); // { "YYYY-M-D:visitId": { startHour, staffId } }
@@ -240,10 +241,13 @@ export default function App() {
         staffId: u.staffId || first?.staffId || 1,
       };
     });
-    if (mergeMode === "replace") {
+    // デモデータ使用中は強制的に全件置換
+    const effectiveMode = userDataImported ? mergeMode : "replace";
+    if (effectiveMode === "replace") {
       const newUsers = prepareUsers(importedUsers, 1);
       setUsers(newUsers);
       setVisits(generateVisits(newUsers));
+      if (!userDataImported) setDayAdj({});
     } else {
       setUsers((prev) => {
         const nextId = prev.length > 0 ? Math.max(...prev.map((u) => u.id)) + 1 : 1;
@@ -262,6 +266,8 @@ export default function App() {
         return merged;
       });
     }
+    localStorage.setItem("coco_user_imported", "1");
+    setUserDataImported(true);
     setCsvOpen(false);
   };
 
@@ -589,7 +595,7 @@ export default function App() {
       {addUserOpen && <AddUserModal areas={areas} onClose={() => setAddUserOpen(false)} onSave={addUser} />}
       {availOpen && <AvailabilityPanel visits={visits} onClose={() => setAvailOpen(false)} />}
       {regSchedOpen && <RegularSchedulePanel users={users} visits={visits} onClose={() => setRegSchedOpen(false)} />}
-      {csvOpen && <CsvModal users={users} areas={areas} onClose={() => setCsvOpen(false)} onImport={importUsers} />}
+      {csvOpen && <CsvModal users={users} areas={areas} onClose={() => setCsvOpen(false)} onImport={importUsers} isDemo={!userDataImported} />}
       {settingsOpen && <SettingsModal office={office} areas={areas} onClose={() => setSettingsOpen(false)} onSaveOffice={setOffice} onSaveAreas={setAreas} />}
     </div>
   );
