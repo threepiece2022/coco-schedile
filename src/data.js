@@ -62,12 +62,18 @@ const SHORT_ALIASES = {
   "訪看Ⅰ5-2": "訪看Ⅰ52", "訪看Ⅰ5-2超": "訪看Ⅰ52超",
 };
 
+/** NFKC正規化で全角/半角・ローマ数字の揺れを吸収 */
+const nfkc = (s) => s.normalize("NFKC");
+
 /** 短縮名またはコード番号からサービスコード情報を取得（旧名・ラベル前方一致にもフォールバック） */
-export const getCodeByShort = (shortName) =>
-  ALL_CODES.find((c) => c.short === shortName || c.code === shortName)
-  ?? ALL_CODES.find((c) => c.short === SHORT_ALIASES[shortName])
-  ?? ALL_CODES.find((c) => c.label.startsWith(shortName))
-  ?? null;
+export const getCodeByShort = (shortName) => {
+  const n = nfkc(shortName);
+  return ALL_CODES.find((c) => c.short === shortName || c.code === shortName)
+    ?? ALL_CODES.find((c) => nfkc(c.short) === n || c.code === n)
+    ?? ALL_CODES.find((c) => nfkc(c.short) === nfkc(SHORT_ALIASES[shortName] || ""))
+    ?? ALL_CODES.find((c) => c.label.startsWith(shortName))
+    ?? null;
+};
 
 export const HOURS = Array.from({ length: 10 }, (_, i) => i + 8); // 8:00-17:00
 export const DAYS = ["月", "火", "水", "木", "金", "土", "日"];
