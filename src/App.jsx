@@ -94,6 +94,7 @@ export default function App() {
   const [insF, setInsF] = useState("all");
   const [regSchedOpen, setRegSchedOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
+  const [unassignedOpen, setUnassignedOpen] = useState(true);
   const [userDataImported, setUserDataImported] = useState(() => !!localStorage.getItem("coco_user_imported"));
   const [calendarMode, setCalendarMode] = useState("day");
   const [dayOff, setDayOff] = useState(0);
@@ -134,6 +135,8 @@ export default function App() {
     if (viewMode === "user" && selUser) return v.userId === selUser;
     return true;
   });
+
+  const unassignedUsers = users.filter(u => !u.regularSchedule || u.regularSchedule.length === 0);
 
   const fUsers = users.filter((u) =>
     (u.name.includes(search) || (u.nameKana || "").includes(search) || u.area.includes(search) || u.address.includes(search) || u.serviceCode.includes(search)) &&
@@ -435,6 +438,29 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {unassignedUsers.length > 0 && (
+            <div style={{ padding: "6px 20px", background: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
+              <div onClick={() => setUnassignedOpen(o => !o)}
+                style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+                <span style={{ fontSize: 13 }}>⚠</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>未割り当て</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#92400e", background: "#fde68a", borderRadius: 10, padding: "1px 8px" }}>{unassignedUsers.length}名</span>
+                <span style={{ fontSize: 10, color: "#b45309", marginLeft: "auto" }}>{unassignedOpen ? "▲" : "▼"}</span>
+              </div>
+              {unassignedOpen && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                  {unassignedUsers.map(u => (
+                    <button key={u.id} onClick={() => setViewUser(u)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", border: "1px solid #fde68a", borderRadius: 16, background: "white", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#1e293b" }}>
+                      {u.name}
+                      <InsBadge type={u.insuranceType} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div style={{ flex: 1, overflow: "auto" }}>
             {calendarMode === "day" ? (
