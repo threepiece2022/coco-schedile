@@ -276,23 +276,22 @@ export default function App() {
   };
 
   const importStaff = (importedStaff) => {
-    setStaff((prev) => {
-      const merged = [...prev];
-      for (const s of importedStaff) {
-        if (s.id != null) {
-          const existIdx = merged.findIndex((m) => m.id === s.id);
-          if (existIdx >= 0) {
-            merged[existIdx] = { ...s };
-          } else {
-            merged.push(s);
-          }
-        } else {
-          const nextId = merged.length > 0 ? Math.max(...merged.map((m) => m.id)) + 1 : 1;
-          merged.push({ ...s, id: nextId });
-        }
-      }
-      return merged;
+    // IDなしの場合は自動採番して全件置換
+    let nextId = 1;
+    const newStaff = importedStaff.map((s) => ({
+      ...s,
+      id: s.id != null ? s.id : nextId++,
+    }));
+    // ID重複がないよう採番を調整
+    const usedIds = new Set(newStaff.filter((s) => s.id != null).map((s) => s.id));
+    let autoId = usedIds.size > 0 ? Math.max(...usedIds) + 1 : 1;
+    const result = newStaff.map((s) => {
+      if (s.id != null) return s;
+      while (usedIds.has(autoId)) autoId++;
+      usedIds.add(autoId);
+      return { ...s, id: autoId++ };
     });
+    setStaff(result);
     setCsvOpen(false);
   };
 
