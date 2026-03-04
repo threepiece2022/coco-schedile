@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, getCodeDuration, USER_STATUSES } from "../data.js";
+import { SERVICE_CODES, ALL_CODES, HOURS, DAYS, getCodeDuration, USER_STATUSES } from "../data.js";
 import { InsBadge, Section } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
 
@@ -14,7 +14,7 @@ const EMPTY_USER = {
   staffId: 1, notes: "", status: "利用中",
 };
 
-export default function AddUserModal({ onClose, onSave, areas }) {
+export default function AddUserModal({ onClose, onSave, areas, staff }) {
   const [form, setForm] = useState({ ...EMPTY_USER });
   const [schedules, setSchedules] = useState([
     { day: 0, hour: 9, staffId: 1, serviceCode: "1313", serviceLabel: "訪看Ⅰ3（30分〜1時間未満）", insuranceType: "介護", duration: 1 },
@@ -98,7 +98,7 @@ export default function AddUserModal({ onClose, onSave, areas }) {
                     {/* Row 2: staff, insurance toggle, service code */}
                     <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 28 }}>
                       <select value={s.staffId} onChange={(e) => setSched(i, "staffId", Number(e.target.value))} style={{ ...sty, flex: 1, fontSize: 10 }}>
-                        {STAFF.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+                        {staff.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
                       </select>
                       <div style={{ display: "flex", gap: 2 }}>
                         {["介護", "医療"].map((t) => (

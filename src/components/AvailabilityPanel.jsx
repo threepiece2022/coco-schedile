@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { STAFF, HOURS, DAYS, getCodeShort, getStaffColor } from "../data.js";
+import { HOURS, DAYS, getCodeShort, getStaffColor } from "../data.js";
 
 /**
  * 空き状況パネル
  * 全スタッフの時間帯ごとの空き/埋まり状況をヒートマップで表示
  */
-export default function AvailabilityPanel({ visits, onClose }) {
+export default function AvailabilityPanel({ visits, staff, onClose }) {
   const [hovCell, setHovCell] = useState(null);
   const [selCell, setSelCell] = useState(null);
 
@@ -15,7 +15,7 @@ export default function AvailabilityPanel({ visits, onClose }) {
 
   // 全スタッフの空き人数
   const getFreeCount = (day, hour) =>
-    STAFF.filter((s) => getCount(s.id, day, hour) === 0).length;
+    staff.filter((s) => getCount(s.id, day, hour) === 0).length;
 
   // 色計算
   const getCellColor = (count) => {
@@ -26,7 +26,7 @@ export default function AvailabilityPanel({ visits, onClose }) {
   };
 
   const getFreeCellColor = (free) => {
-    const total = STAFF.length;
+    const total = staff.length;
     const ratio = free / total;
     if (ratio >= 0.75) return { bg: "#dcfce7", border: "#86efac" };
     if (ratio >= 0.5) return { bg: "#ecfdf5", border: "#a7f3d0" };
@@ -78,7 +78,7 @@ export default function AvailabilityPanel({ visits, onClose }) {
           {/* サマリー: 全体空き人数ヒートマップ */}
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>
-              🟢 時間帯別 空きスタッフ人数（全{STAFF.length}名中）
+              🟢 時間帯別 空きスタッフ人数（全{staff.length}名中）
             </div>
             <div style={{ display: "grid", gridTemplateColumns: `80px repeat(${DAYS.length}, 1fr)`, gap: 2 }}>
               <div />
@@ -113,7 +113,7 @@ export default function AvailabilityPanel({ visits, onClose }) {
                           outlineOffset: 1,
                         }}>
                         {free}
-                        <span style={{ fontSize: 8, fontWeight: 500, color: "#94a3b8" }}>/{STAFF.length}</span>
+                        <span style={{ fontSize: 8, fontWeight: 500, color: "#94a3b8" }}>/{staff.length}</span>
                         {/* ホバー時ツールチップ */}
                         {isHov && (
                           <div style={{
@@ -123,7 +123,7 @@ export default function AvailabilityPanel({ visits, onClose }) {
                             boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                           }}>
                             <div style={{ fontWeight: 700, marginBottom: 4 }}>{DAYS[di]}曜 {h}:00</div>
-                            {STAFF.map((s) => {
+                            {staff.map((s) => {
                               const cnt = getCount(s.id, di, h);
                               return (
                                 <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
@@ -153,7 +153,7 @@ export default function AvailabilityPanel({ visits, onClose }) {
                 <button onClick={() => setSelCell(null)} style={{ border: "none", background: "none", cursor: "pointer", fontSize: 14, color: "#94a3b8" }}>✕</button>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {STAFF.map((s) => {
+                {staff.map((s) => {
                   const cnt = getCount(s.id, selCell.day, selCell.hour);
                   const isFree = cnt === 0;
                   const cellVisits = visits.filter((v) => v.staffId === s.id && v.day === selCell.day && v.startHour === selCell.hour && v.status !== "キャンセル");
@@ -189,21 +189,21 @@ export default function AvailabilityPanel({ visits, onClose }) {
               {DAYS.map((d, i) => (
                 <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, padding: "4px 0", color: i >= 5 ? "#ef4444" : "#64748b" }}>{d}</div>
               ))}
-              {STAFF.map((staff) => (
-                <React.Fragment key={staff.id}>
+              {staff.map((st) => (
+                <React.Fragment key={st.id}>
                   <div style={{
                     gridColumn: "1 / -1", padding: "8px 0 4px", fontSize: 12, fontWeight: 700,
-                    color: getStaffColor(staff.id), display: "flex", alignItems: "center", gap: 6,
+                    color: getStaffColor(st.id), display: "flex", alignItems: "center", gap: 6,
                     borderTop: "1px solid #f1f5f9", marginTop: 4,
                   }}>
                     <div style={{
-                      width: 22, height: 22, borderRadius: "50%", background: `${getStaffColor(staff.id)}18`,
+                      width: 22, height: 22, borderRadius: "50%", background: `${getStaffColor(st.id)}18`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 10, fontWeight: 800, color: getStaffColor(staff.id),
-                    }}>{staff.name[0]}</div>
-                    {staff.name}
+                      fontSize: 10, fontWeight: 800, color: getStaffColor(st.id),
+                    }}>{st.name[0]}</div>
+                    {st.name}
                     <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>
-                      {staff.role} · 週{visits.filter((v) => v.staffId === staff.id && v.status !== "キャンセル").length}件
+                      {st.role} · 週{visits.filter((v) => v.staffId === st.id && v.status !== "キャンセル").length}件
                     </span>
                   </div>
                   <div />
@@ -214,9 +214,9 @@ export default function AvailabilityPanel({ visits, onClose }) {
                     <React.Fragment key={h}>
                       <div style={{ fontSize: 9, color: "#cbd5e1", textAlign: "right", padding: "3px 6px 3px 0" }}>{h}:00</div>
                       {DAYS.map((_, di) => {
-                        const cnt = getCount(staff.id, di, h);
+                        const cnt = getCount(st.id, di, h);
                         const cc = getCellColor(cnt);
-                        const cellVisits = visits.filter((v) => v.staffId === staff.id && v.day === di && v.startHour === h && v.status !== "キャンセル");
+                        const cellVisits = visits.filter((v) => v.staffId === st.id && v.day === di && v.startHour === h && v.status !== "キャンセル");
                         return (
                           <div key={di} style={{
                             textAlign: "center", padding: "3px 2px", borderRadius: 4,

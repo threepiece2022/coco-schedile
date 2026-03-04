@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { STAFF, HOURS, DAYS, getStaffColor } from "../data.js";
+import { HOURS, DAYS, getStaffColor } from "../data.js";
 import { InsBadge } from "./ui.jsx";
 
 /**
  * 定期スケジュール一覧パネル
  * 全利用者の定期訪問を曜日×時間帯のマトリクスで一覧表示
  */
-export default function RegularSchedulePanel({ users, visits, onClose }) {
+export default function RegularSchedulePanel({ users, visits, staff, onClose }) {
   const [staffFilter, setStaffFilter] = useState("all");
   const [insFilter, setInsFilter] = useState("all");
 
@@ -74,7 +74,7 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
             <select value={staffFilter} onChange={(e) => setStaffFilter(e.target.value)}
               style={{ padding: "5px 8px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 11, outline: "none", color: "#334155" }}>
               <option value="all">全スタッフ</option>
-              {STAFF.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <select value={insFilter} onChange={(e) => setInsFilter(e.target.value)}
               style={{ padding: "5px 8px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 11, outline: "none", color: "#334155" }}>
@@ -133,7 +133,7 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
                         </div>
                       )}
                       {slotEntries.slice(0, 4).map((entry, idx) => {
-                        const entryStaff = STAFF.find((s) => s.id === entry.staffId);
+                        const entryStaff = staff.find((s) => s.id === entry.staffId);
                         return (
                           <div key={`${entry.user.id}-${idx}`} style={{
                             display: "flex", alignItems: "center", gap: 2,
@@ -168,7 +168,7 @@ export default function RegularSchedulePanel({ users, visits, onClose }) {
               👤 スタッフ別 定期件数サマリ
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
-              {STAFF.filter((s) => staffFilter === "all" || s.id === Number(staffFilter)).map((s) => {
+              {staff.filter((s) => staffFilter === "all" || s.id === Number(staffFilter)).map((s) => {
                 // エントリ単位でカウント
                 let userCount = 0;
                 let totalEntries = 0;

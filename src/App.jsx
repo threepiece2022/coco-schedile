@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration, getCodeShort, getStaffColor, DEFAULT_AREAS } from "./data.js";
+import { DEFAULT_STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration, getCodeShort, getStaffColor, DEFAULT_AREAS } from "./data.js";
 import { InsBadge, StBadge, StatusBadge } from "./components/ui.jsx";
 import { lbl, sty, navBtn } from "./styles.js";
 import UserDetailPanel from "./components/UserDetailPanel.jsx";
@@ -8,6 +8,7 @@ import AvailabilityPanel from "./components/AvailabilityPanel.jsx";
 import RegularSchedulePanel from "./components/RegularSchedulePanel.jsx";
 import CsvModal from "./components/CsvModal.jsx";
 import SettingsModal from "./components/SettingsModal.jsx";
+import StaffManagerPanel from "./components/StaffManagerPanel.jsx";
 
 const insColor = (ins) => ins === "医療"
   ? { bg: "#fffbeb", border: "#f59e0b", text: "#92400e", left: "#d97706" }
@@ -62,6 +63,7 @@ const loadState = (key, fallback) => {
 };
 
 export default function App() {
+  const [staff, setStaff] = useState(() => loadState("coco_staff", DEFAULT_STAFF));
   const [users, setUsers] = useState(() => {
     const raw = loadState("coco_users", INITIAL_USERS);
     return raw.map((u) => ({ ...u, nameKana: u.nameKana || "", status: u.status || "利用中" }));
@@ -70,7 +72,9 @@ export default function App() {
   const [areas, setAreas] = useState(() => loadState("coco_areas", DEFAULT_AREAS));
   const [office, setOffice] = useState(() => loadState("coco_office", { name: "スリーピース株式会社", address: "", phone: "" }));
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [staffMgrOpen, setStaffMgrOpen] = useState(false);
 
+  useEffect(() => { localStorage.setItem("coco_staff", JSON.stringify(staff)); }, [staff]);
   useEffect(() => { localStorage.setItem("coco_users", JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem("coco_visits", JSON.stringify(visits)); }, [visits]);
   useEffect(() => { localStorage.setItem("coco_areas", JSON.stringify(areas)); }, [areas]);
@@ -271,6 +275,27 @@ export default function App() {
     setCsvOpen(false);
   };
 
+  const importStaff = (importedStaff) => {
+    setStaff((prev) => {
+      const merged = [...prev];
+      for (const s of importedStaff) {
+        if (s.id != null) {
+          const existIdx = merged.findIndex((m) => m.id === s.id);
+          if (existIdx >= 0) {
+            merged[existIdx] = { ...s };
+          } else {
+            merged.push(s);
+          }
+        } else {
+          const nextId = merged.length > 0 ? Math.max(...merged.map((m) => m.id)) + 1 : 1;
+          merged.push({ ...s, id: nextId });
+        }
+      }
+      return merged;
+    });
+    setCsvOpen(false);
+  };
+
   const dayDow = calendarMode === "day" ? selDow : todayDow;
   const tVis = visits.filter((v) => v.day === dayDow).length;
 
@@ -315,8 +340,11 @@ export default function App() {
 
           {viewMode === "staff" ? (
             <div style={{ flex: 1, overflowY: "auto", padding: 8 }}>
-              <button onClick={() => setSelStaff(null)} style={{ width: "100%", padding: "7px 10px", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left", fontSize: 12, fontWeight: 600, marginBottom: 4, background: !selStaff ? "#eff6ff" : "transparent", color: !selStaff ? "#1d4ed8" : "#64748b" }}>📋 全スタッフ表示</button>
-              {STAFF.map((s) => {
+              <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                <button onClick={() => setSelStaff(null)} style={{ flex: 1, padding: "7px 10px", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left", fontSize: 12, fontWeight: 600, background: !selStaff ? "#eff6ff" : "transparent", color: !selStaff ? "#1d4ed8" : "#64748b" }}>📋 全表示</button>
+                <button onClick={() => setStaffMgrOpen(true)} style={{ padding: "7px 10px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg, #059669, #10b981)", color: "white" }}>管理</button>
+              </div>
+              {staff.map((s) => {
                 const ct = visits.filter((v) => v.staffId === s.id).length;
                 return (
                   <button key={s.id} onClick={() => setSelStaff(s.id)}
@@ -389,7 +417,7 @@ export default function App() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                {fv.length}件{selStaff ? ` · ${STAFF.find((s) => s.id === selStaff)?.name}` : ""}{selUser ? ` · ${users.find((u) => u.id === selUser)?.name}` : ""}
+                {fv.length}件{selStaff ? ` · ${staff.find((s) => s.id === selStaff)?.name}` : ""}{selUser ? ` · ${users.find((u) => u.id === selUser)?.name}` : ""}
               </span>
               <button onClick={() => setRegSchedOpen(true)}
                 style={{ padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#64748b" }}>
@@ -419,8 +447,8 @@ export default function App() {
                 </div>
                 {/* スタッフ行（グループ別） */}
                 {[
-                  { label: "看護師", members: STAFF.filter((s) => s.role === "看護師"), color: "#3b82f6" },
-                  { label: "リハビリ職", members: STAFF.filter((s) => s.role !== "看護師"), color: "#059669" },
+                  { label: "看護師", members: staff.filter((s) => s.role === "看護師"), color: "#3b82f6" },
+                  { label: "リハビリ職", members: staff.filter((s) => s.role !== "看護師"), color: "#059669" },
                 ].map((group) => (<>
                   {/* グループヘッダー */}
                   <div key={`gh-${group.label}`} style={{ padding: "4px 8px", background: `${group.color}08`, borderBottom: "2px solid ${group.color}30", display: "flex", alignItems: "center", gap: 6 }}>
@@ -512,7 +540,7 @@ export default function App() {
                           background: isT ? "#fafbff" : dragV ? "#f0fdf4" : "white",
                           ...(!selStaff && cv.length > 0 ? { display: "flex", gap: 1, padding: "2px 1px", overflowY: "visible" } : {}),
                         }}>
-                        {cv.map((v) => { const st = STAFF.find((s) => s.id === v.staffId); return <VCard key={v.id} visit={v} staff={st} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={!selStaff} />; })}
+                        {cv.map((v) => { const st = staff.find((s) => s.id === v.staffId); return <VCard key={v.id} visit={v} staff={st} isDrag={dragV?.id === v.id} onDS={onDS} onEdit={(v) => setEditV({ ...v })} flexMode={!selStaff} />; })}
                       </div>
                     );
                   })}
@@ -554,7 +582,7 @@ export default function App() {
 
               <div style={{ display: "grid", gap: 12 }}>
                 <div><label style={lbl}>担当スタッフ</label>
-                  <select value={editV.staffId} onChange={(e) => setEditV({ ...editV, staffId: Number(e.target.value) })} style={sty}>{STAFF.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+                  <select value={editV.staffId} onChange={(e) => setEditV({ ...editV, staffId: Number(e.target.value) })} style={sty}>{staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div><label style={lbl}>曜日</label><select value={editV.day} onChange={(e) => setEditV({ ...editV, day: Number(e.target.value) })} style={sty}>{DAYS.map((d, i) => <option key={i} value={i}>{d}曜日</option>)}</select></div>
                   <div><label style={lbl}>開始時間</label><select value={editV.startHour} onChange={(e) => setEditV({ ...editV, startHour: Number(e.target.value) })} style={sty}>{HOURS.flatMap((h) => Array.from({ length: 12 }, (_, i) => { const t = h + i * 5 / 60; return <option key={t} value={t}>{h}:{String(i * 5).padStart(2, "0")}</option>; }))}</select></div>
@@ -591,12 +619,13 @@ export default function App() {
         </div>
       )}
 
-      {viewUser && <UserDetailPanel user={viewUser} visits={visits} areas={areas} onClose={() => setViewUser(null)} onSave={updateUser} onDelete={deleteUser} />}
-      {addUserOpen && <AddUserModal areas={areas} onClose={() => setAddUserOpen(false)} onSave={addUser} />}
-      {availOpen && <AvailabilityPanel visits={visits} onClose={() => setAvailOpen(false)} />}
-      {regSchedOpen && <RegularSchedulePanel users={users} visits={visits} onClose={() => setRegSchedOpen(false)} />}
-      {csvOpen && <CsvModal users={users} areas={areas} onClose={() => setCsvOpen(false)} onImport={importUsers} isDemo={!userDataImported} />}
+      {viewUser && <UserDetailPanel user={viewUser} visits={visits} areas={areas} staff={staff} onClose={() => setViewUser(null)} onSave={updateUser} onDelete={deleteUser} />}
+      {addUserOpen && <AddUserModal areas={areas} staff={staff} onClose={() => setAddUserOpen(false)} onSave={addUser} />}
+      {availOpen && <AvailabilityPanel visits={visits} staff={staff} onClose={() => setAvailOpen(false)} />}
+      {regSchedOpen && <RegularSchedulePanel users={users} visits={visits} staff={staff} onClose={() => setRegSchedOpen(false)} />}
+      {csvOpen && <CsvModal users={users} staff={staff} areas={areas} onClose={() => setCsvOpen(false)} onImport={importUsers} onImportStaff={importStaff} isDemo={!userDataImported} />}
       {settingsOpen && <SettingsModal office={office} areas={areas} onClose={() => setSettingsOpen(false)} onSaveOffice={setOffice} onSaveAreas={setAreas} />}
+      {staffMgrOpen && <StaffManagerPanel staff={staff} visits={visits} onClose={() => setStaffMgrOpen(false)} onSave={setStaff} />}
     </div>
   );
 }

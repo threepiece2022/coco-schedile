@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration, getCodeShort, getStaffColor, USER_STATUSES } from "../data.js";
+import { SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration, getCodeShort, getStaffColor, USER_STATUSES } from "../data.js";
 import { InsBadge, StBadge, StatusBadge, Section, InfoRow } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
 
-export default function UserDetailPanel({ user, visits, areas, onClose, onSave, onDelete }) {
+export default function UserDetailPanel({ user, visits, areas, staff, onClose, onSave, onDelete }) {
   if (!user) return null;
 
   const [editing, setEditing] = useState(false);
@@ -17,7 +17,7 @@ export default function UserDetailPanel({ user, visits, areas, onClose, onSave, 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const uv = visits.filter((v) => v.userId === user.id);
-  const staff = STAFF.find((s) => s.id === user.staffId);
+  const staffMember = staff.find((s) => s.id === user.staffId);
   const m = user.insuranceType === "医療";
 
   const DURATION_OPTIONS = [0.5, 1, 1.5, 2];
@@ -124,7 +124,7 @@ export default function UserDetailPanel({ user, visits, areas, onClose, onSave, 
                       {/* Row 2: staff, insurance toggle, service code */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 28 }}>
                         <select value={s.staffId} onChange={(e) => setSched(i, "staffId", Number(e.target.value))} style={{ ...sty, flex: 1, fontSize: 10 }}>
-                          {STAFF.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+                          {staff.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
                         </select>
                         <div style={{ display: "flex", gap: 2 }}>
                           {["介護", "医療"].map((t) => (
@@ -198,14 +198,14 @@ export default function UserDetailPanel({ user, visits, areas, onClose, onSave, 
           <Section icon="📋" title="基本情報">
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <InfoRow label="住所" value={user.address} full />
-              <InfoRow label="担当スタッフ（デフォルト）" value={staff?.name || "未設定"} />
+              <InfoRow label="担当スタッフ（デフォルト）" value={staffMember?.name || "未設定"} />
               <InfoRow label="エリア" value={user.area} />
             </div>
           </Section>
           <Section icon="📅" title="定期訪問スケジュール" badge={`週${user.frequency}回`}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {user.regularSchedule.map((s, i) => {
-                const entryStaff = STAFF.find((st) => st.id === (s.staffId ?? user.staffId));
+                const entryStaff = staff.find((st) => st.id === (s.staffId ?? user.staffId));
                 const entryIns = s.insuranceType ?? user.insuranceType;
                 const entryCode = s.serviceCode ?? user.serviceCode;
                 return (
@@ -229,7 +229,7 @@ export default function UserDetailPanel({ user, visits, areas, onClose, onSave, 
             {uv.length === 0 ? <div style={{ color: "#94a3b8", fontSize: 12, padding: 10 }}>今週の訪問予定はありません</div> :
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {uv.map((v) => {
-                  const vs = STAFF.find((s) => s.id === v.staffId);
+                  const vs = staff.find((s) => s.id === v.staffId);
                   return (
                     <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "#fafbfc", borderRadius: 6, border: "1px solid #f1f5f9" }}>
                       <div style={{ width: 8, height: 8, borderRadius: "50%", background: vs ? getStaffColor(vs.id) : "#94a3b8", flexShrink: 0 }} />

@@ -1,4 +1,4 @@
-export const STAFF = [
+export const DEFAULT_STAFF = [
   { id: 1, name: "田中 看護師", role: "看護師" },
   { id: 2, name: "佐藤 看護師", role: "看護師" },
   { id: 3, name: "鈴木 PT", role: "理学療法士" },

@@ -1,10 +1,11 @@
 import React, { useState, useRef } from "react";
-import { STAFF, DAYS } from "../data.js";
-import { generateStaffCsv, generateUsersCsv, parseUsersCsv, downloadCsv } from "../utils/csv.js";
+import { DAYS } from "../data.js";
+import { generateStaffCsv, generateUsersCsv, parseUsersCsv, parseStaffCsv, downloadCsv } from "../utils/csv.js";
 import { lbl } from "../styles.js";
 
-export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
+export default function CsvModal({ users, staff, areas, onClose, onImport, onImportStaff, isDemo }) {
   const [tab, setTab] = useState("export");
+  const [importType, setImportType] = useState("users"); // "users" | "staff"
   const [file, setFile] = useState(null);
   const [mergeMode, setMergeMode] = useState(isDemo ? "replace" : "merge"); // merge | replace
   const [parseResult, setParseResult] = useState(null); // { data, errors }
@@ -12,7 +13,7 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
   const fileRef = useRef(null);
 
   const handleExportStaff = () => {
-    downloadCsv("職員マスタ.csv", generateStaffCsv());
+    downloadCsv("職員マスタ.csv", generateStaffCsv(staff));
   };
 
   const handleExportUsers = () => {
@@ -26,7 +27,9 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
     setImportDone(false);
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const result = parseUsersCsv(ev.target.result, areas);
+      const result = importType === "staff"
+        ? parseStaffCsv(ev.target.result)
+        : parseUsersCsv(ev.target.result, areas, staff);
       setParseResult(result);
     };
     reader.readAsText(f, "UTF-8");
@@ -34,9 +37,21 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
 
   const handleImport = () => {
     if (!parseResult || parseResult.data.length === 0) return;
-    if (mergeMode === "replace" && !isDemo && !window.confirm("全件置換すると既存の利用者データがすべて削除されます。よろしいですか？")) return;
-    onImport(parseResult.data, mergeMode);
+    if (importType === "staff") {
+      onImportStaff(parseResult.data);
+    } else {
+      if (mergeMode === "replace" && !isDemo && !window.confirm("全件置換すると既存の利用者データがすべて削除されます。よろしいですか？")) return;
+      onImport(parseResult.data, mergeMode);
+    }
     setImportDone(true);
+  };
+
+  const switchImportType = (type) => {
+    setImportType(type);
+    setFile(null);
+    setParseResult(null);
+    setImportDone(false);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const tabStyle = (active) => ({
@@ -47,6 +62,13 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
   });
 
+  const typeStyle = (active) => ({
+    flex: 1, padding: "8px 12px", border: `2px solid ${active ? "#3b82f6" : "#e2e8f0"}`,
+    borderRadius: 8, cursor: "pointer", textAlign: "center",
+    background: active ? "#eff6ff" : "white",
+    fontSize: 12, fontWeight: 700, color: active ? "#1d4ed8" : "#64748b",
+  });
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={onClose}>
       <div style={{ background: "white", borderRadius: 14, width: 640, maxHeight: "90vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
@@ -54,7 +76,7 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
         <div style={{ padding: "18px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 17, fontWeight: 800, color: "#0f172a" }}>CSV入出力</div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>利用者・スケジュールデータの一括エクスポート・インポート</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>利用者・職員データの一括エクスポート・インポート</div>
           </div>
           <button onClick={onClose} style={{ border: "none", background: "none", fontSize: 18, cursor: "pointer", color: "#94a3b8" }}>✕</button>
         </div>
@@ -73,7 +95,7 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>職員マスタ</div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>ID・名前・役職（{STAFF.length}名）</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>ID・名前・役職（{staff.length}名）</div>
                   </div>
                   <button onClick={handleExportStaff} style={{ padding: "8px 16px", border: "none", background: "#0f172a", color: "white", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>ダウンロード</button>
                 </div>
@@ -94,6 +116,15 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* インポート種別選択 */}
+              <div>
+                <label style={lbl}>インポート種別</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => switchImportType("users")} style={typeStyle(importType === "users")}>利用者</button>
+                  <button onClick={() => switchImportType("staff")} style={typeStyle(importType === "staff")}>職員</button>
+                </div>
+              </div>
+
               {/* ファイル選択 */}
               <div style={{ padding: "14px 16px", background: "#f8fafc", borderRadius: 8, border: "2px dashed #cbd5e1", textAlign: "center" }}>
                 <input ref={fileRef} type="file" accept=".csv" onChange={handleFileChange} style={{ display: "none" }} />
@@ -103,32 +134,34 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
                 {file && <div style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>{file.name}</div>}
               </div>
 
-              {/* マージモード選択 */}
-              <div>
-                <label style={lbl}>インポートモード</label>
-                {isDemo && (
-                  <div style={{ padding: "8px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 6, marginBottom: 8, fontSize: 11, color: "#92400e" }}>
-                    現在デモデータを使用中のため、インポート時にデモデータは自動的に置換されます
+              {/* マージモード選択（利用者のみ） */}
+              {importType === "users" && (
+                <div>
+                  <label style={lbl}>インポートモード</label>
+                  {isDemo && (
+                    <div style={{ padding: "8px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 6, marginBottom: 8, fontSize: 11, color: "#92400e" }}>
+                      現在デモデータを使用中のため、インポート時にデモデータは自動的に置換されます
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {[
+                      { value: "merge", label: "更新", desc: "名前+住所一致で上書き＋新規追加" },
+                      { value: "replace", label: "全件置換", desc: "既存データを全削除して入れ替え" },
+                    ].map((m) => (
+                      <button key={m.value} onClick={() => !isDemo && setMergeMode(m.value)}
+                        style={{
+                          flex: 1, padding: "10px 12px", border: `2px solid ${mergeMode === m.value ? "#3b82f6" : "#e2e8f0"}`,
+                          borderRadius: 8, cursor: isDemo ? "default" : "pointer", textAlign: "left",
+                          background: mergeMode === m.value ? "#eff6ff" : "white",
+                          opacity: isDemo && m.value !== "replace" ? 0.5 : 1,
+                        }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: mergeMode === m.value ? "#1d4ed8" : "#1e293b" }}>{m.label}</div>
+                        <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{m.desc}</div>
+                      </button>
+                    ))}
                   </div>
-                )}
-                <div style={{ display: "flex", gap: 8 }}>
-                  {[
-                    { value: "merge", label: "更新", desc: "名前+住所一致で上書き＋新規追加" },
-                    { value: "replace", label: "全件置換", desc: "既存データを全削除して入れ替え" },
-                  ].map((m) => (
-                    <button key={m.value} onClick={() => !isDemo && setMergeMode(m.value)}
-                      style={{
-                        flex: 1, padding: "10px 12px", border: `2px solid ${mergeMode === m.value ? "#3b82f6" : "#e2e8f0"}`,
-                        borderRadius: 8, cursor: isDemo ? "default" : "pointer", textAlign: "left",
-                        background: mergeMode === m.value ? "#eff6ff" : "white",
-                        opacity: isDemo && m.value !== "replace" ? 0.5 : 1,
-                      }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: mergeMode === m.value ? "#1d4ed8" : "#1e293b" }}>{m.label}</div>
-                      <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{m.desc}</div>
-                    </button>
-                  ))}
                 </div>
-              </div>
+              )}
 
               {/* バリデーション結果 */}
               {parseResult && (
@@ -163,23 +196,34 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
                         <table style={{ width: "100%", fontSize: 10, borderCollapse: "collapse" }}>
                           <thead>
                             <tr style={{ background: "#f8fafc" }}>
-                              {["ID", "利用者名", "エリア", "保険", "スケジュール数"].map((h) => (
-                                <th key={h} style={{ padding: "4px 6px", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontWeight: 600, color: "#64748b", whiteSpace: "nowrap" }}>{h}</th>
-                              ))}
+                              {importType === "staff"
+                                ? ["ID", "名前", "役職"].map((h) => (
+                                    <th key={h} style={{ padding: "4px 6px", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontWeight: 600, color: "#64748b", whiteSpace: "nowrap" }}>{h}</th>
+                                  ))
+                                : ["ID", "利用者名", "エリア", "保険", "スケジュール数"].map((h) => (
+                                    <th key={h} style={{ padding: "4px 6px", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontWeight: 600, color: "#64748b", whiteSpace: "nowrap" }}>{h}</th>
+                                  ))
+                              }
                             </tr>
                           </thead>
                           <tbody>
-                            {parseResult.data.slice(0, 5).map((u, i) => (
+                            {parseResult.data.slice(0, 5).map((item, i) => (
                               <tr key={i}>
-                                <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{u.id || "新規"}</td>
-                                <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9", fontWeight: 600 }}>{u.name}</td>
-                                <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{u.area}</td>
-                                <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{u.insuranceType}</td>
-                                <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>
-                                  {u.regularSchedule.length > 0
-                                    ? u.regularSchedule.map((s) => `${DAYS[s.day]}${Math.floor(s.hour)}:${String(Math.round((s.hour % 1) * 60)).padStart(2, "0")}`).join(", ")
-                                    : "なし"}
-                                </td>
+                                {importType === "staff" ? (<>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{item.id || "新規"}</td>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9", fontWeight: 600 }}>{item.name}</td>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{item.role}</td>
+                                </>) : (<>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{item.id || "新規"}</td>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9", fontWeight: 600 }}>{item.name}</td>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{item.area}</td>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>{item.insuranceType}</td>
+                                  <td style={{ padding: "4px 6px", borderBottom: "1px solid #f1f5f9" }}>
+                                    {item.regularSchedule.length > 0
+                                      ? item.regularSchedule.map((s) => `${DAYS[s.day]}${Math.floor(s.hour)}:${String(Math.round((s.hour % 1) * 60)).padStart(2, "0")}`).join(", ")
+                                      : "なし"}
+                                  </td>
+                                </>)}
                               </tr>
                             ))}
                           </tbody>
@@ -206,7 +250,7 @@ export default function CsvModal({ users, areas, onClose, onImport, isDemo }) {
                     boxShadow: parseResult?.data.length > 0 ? "0 2px 8px rgba(37,99,235,0.3)" : "none",
                   }}>
                   {parseResult?.data.length > 0
-                    ? `${parseResult.data.length}件をインポート${mergeMode === "replace" ? "（全件置換）" : ""}`
+                    ? `${parseResult.data.length}件をインポート${importType === "users" && mergeMode === "replace" ? "（全件置換）" : ""}`
                     : "CSVファイルを選択してください"}
                 </button>
               )}

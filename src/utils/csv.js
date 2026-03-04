@@ -1,4 +1,4 @@
-import { STAFF, ALL_CODES, DAYS, getCodeShort, getCodeByShort } from "../data.js";
+import { ALL_CODES, DAYS, getCodeShort, getCodeByShort } from "../data.js";
 
 /** カンマ・引用符・改行を含む値をCSVエスケープ */
 export function csvEscape(val) {
@@ -58,13 +58,46 @@ export function parseCsv(text) {
 }
 
 /** 職員マスタCSV生成 */
-export function generateStaffCsv() {
+export function generateStaffCsv(staff) {
   const header = ["ID", "名前", "役職"];
   const lines = [header.map(csvEscape).join(",")];
-  for (const s of STAFF) {
+  for (const s of staff) {
     lines.push([s.id, s.name, s.role].map(csvEscape).join(","));
   }
   return lines.join("\n");
+}
+
+/** 職員CSVをパースしバリデーション */
+export function parseStaffCsv(text) {
+  const { rows } = parseCsv(text);
+  if (rows.length === 0) return { data: [], errors: [{ row: 0, message: "データ行がありません" }] };
+
+  const VALID_ROLES = ["看護師", "理学療法士", "作業療法士", "言語聴覚士"];
+  const errors = [];
+  const data = [];
+
+  rows.forEach((row, idx) => {
+    const rowNum = idx + 2;
+    const get = (i) => (row[i] || "").trim();
+    const idRaw = get(0);
+    const name = get(1);
+    const role = get(2);
+
+    const rowErrors = [];
+    if (!name) rowErrors.push("名前が空です");
+    if (!role) rowErrors.push("役職が空です");
+    else if (!VALID_ROLES.includes(role)) rowErrors.push(`役職「${role}」は無効です（${VALID_ROLES.join("/")}）`);
+
+    if (rowErrors.length > 0) {
+      errors.push({ row: rowNum, message: rowErrors.join("; ") });
+      return;
+    }
+
+    const id = idRaw ? parseInt(idRaw, 10) : null;
+    data.push({ id: isNaN(id) ? null : id, name, role });
+  });
+
+  return { data, errors };
 }
 
 /** 利用者・スケジュールCSV生成（新12列フォーマット、1行=1スケジュール） */
@@ -95,13 +128,13 @@ export function generateUsersCsv(usersData) {
 }
 
 /** 利用者CSVをパースしバリデーション（新12列フォーマット） */
-export function parseUsersCsv(text, validAreas) {
+export function parseUsersCsv(text, validAreas, staff) {
   const { headers, rows } = parseCsv(text);
   if (rows.length === 0) return { data: [], errors: [{ row: 0, message: "データ行がありません" }] };
 
   if (!validAreas) validAreas = ["柏エリア", "高塚エリア", "松戸エリア"];
   const validIns = ["介護", "医療"];
-  const validStaffIds = new Set(STAFF.map((s) => s.id));
+  const validStaffIds = new Set((staff || []).map((s) => s.id));
   const validDays = new Set(DAYS);
 
   const errors = [];
