@@ -81,6 +81,7 @@ export default function RegularSchedulePanel({ users, visits, staff, onClose }) 
               <option value="all">全保険種別</option>
               <option value="介護">介護保険</option>
               <option value="医療">医療保険</option>
+              <option value="自費">自費</option>
             </select>
             <button onClick={onClose} style={{ border: "none", background: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}>✕</button>
           </div>

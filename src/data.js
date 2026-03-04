@@ -14,6 +14,7 @@ export const getStaffColor = (staffId) => STAFF_COLORS[(staffId - 1) % STAFF_COL
 
 export const DEFAULT_AREAS = ["柏エリア", "高塚エリア", "松戸エリア"];
 export const USER_STATUSES = ["利用中", "中止中", "終了"];
+export const CARE_LEVELS = ["", "要支援1", "要支援2", "要介護1", "要介護2", "要介護3", "要介護4", "要介護5"];
 
 export const SERVICE_CODES = {
   kaigo: [
@@ -22,14 +23,14 @@ export const SERVICE_CODES = {
     { code: "1313", short: "訪看Ⅰ3", label: "訪看Ⅰ3（30分〜1時間未満）", insurance: "介護", duration: 1 },
     { code: "1314", short: "訪看Ⅰ4", label: "訪看Ⅰ4（1時間〜1時間半未満）", insurance: "介護", duration: 1.5 },
     { code: "1315", short: "訪看Ⅰ5", label: "訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
-    { code: "1316", short: "訪看Ⅰ5-2", label: "訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
-    { code: "1317", short: "訪看Ⅰ5-2超", label: "訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
-    { code: "1411", short: "予防Ⅰ1", label: "予防訪看Ⅰ1（20分未満）", insurance: "介護", duration: 0.5 },
-    { code: "1412", short: "予防Ⅰ2", label: "予防訪看Ⅰ2（30分未満）", insurance: "介護", duration: 0.5 },
-    { code: "1413", short: "予防Ⅰ3", label: "予防訪看Ⅰ3（30分〜1時間未満）", insurance: "介護", duration: 1 },
-    { code: "1414", short: "予防訪看Ⅰ5", label: "予防訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
-    { code: "1415", short: "予防訪看Ⅰ5-2", label: "予防訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
-    { code: "1416", short: "予防訪看Ⅰ5-2超", label: "予防訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
+    { code: "1316", short: "訪看Ⅰ52", label: "訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
+    { code: "1317", short: "訪看Ⅰ52超", label: "訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
+    { code: "1411", short: "予訪看Ⅰ1", label: "予防訪看Ⅰ1（20分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1412", short: "予訪看Ⅰ2", label: "予防訪看Ⅰ2（30分未満）", insurance: "介護", duration: 0.5 },
+    { code: "1413", short: "予訪看Ⅰ3", label: "予防訪看Ⅰ3（30分〜1時間未満）", insurance: "介護", duration: 1 },
+    { code: "1414", short: "予訪看Ⅰ5", label: "予防訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
+    { code: "1415", short: "予訪看Ⅰ52", label: "予防訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
+    { code: "1416", short: "予訪看Ⅰ52超", label: "予防訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
   ],
   iryo: [
     { code: "C005", short: "基本療養費Ⅰ", label: "訪問看護基本療養費(Ⅰ)", insurance: "医療", duration: 1.5 },
@@ -41,9 +42,12 @@ export const SERVICE_CODES = {
     { code: "C010", short: "24h加算", label: "24時間対応体制加算", insurance: "医療", duration: 1 },
     { code: "C011", short: "特別管理", label: "特別管理加算", insurance: "医療", duration: 1 },
   ],
+  jihi: [
+    { code: "J001", short: "自費訪問", label: "自費訪問", insurance: "自費", duration: 1 },
+  ],
 };
 
-export const ALL_CODES = [...SERVICE_CODES.kaigo, ...SERVICE_CODES.iryo];
+export const ALL_CODES = [...SERVICE_CODES.kaigo, ...SERVICE_CODES.iryo, ...SERVICE_CODES.jihi];
 
 /** サービスコードからデフォルトdurationを取得 */
 export const getCodeDuration = (code) => ALL_CODES.find((c) => c.code === code)?.duration ?? 1;
@@ -51,9 +55,17 @@ export const getCodeDuration = (code) => ALL_CODES.find((c) => c.code === code)?
 /** サービスコードから短縮表示名を取得 */
 export const getCodeShort = (code) => ALL_CODES.find((c) => c.code === code)?.short ?? code;
 
-/** 短縮名またはコード番号からサービスコード情報を取得（ラベル前方一致にもフォールバック） */
+/** 旧短縮名→現短縮名の互換マッピング */
+const SHORT_ALIASES = {
+  "予防Ⅰ1": "予訪看Ⅰ1", "予防Ⅰ2": "予訪看Ⅰ2", "予防Ⅰ3": "予訪看Ⅰ3",
+  "予防訪看Ⅰ5": "予訪看Ⅰ5", "予防訪看Ⅰ5-2": "予訪看Ⅰ52", "予防訪看Ⅰ5-2超": "予訪看Ⅰ52超",
+  "訪看Ⅰ5-2": "訪看Ⅰ52", "訪看Ⅰ5-2超": "訪看Ⅰ52超",
+};
+
+/** 短縮名またはコード番号からサービスコード情報を取得（旧名・ラベル前方一致にもフォールバック） */
 export const getCodeByShort = (shortName) =>
   ALL_CODES.find((c) => c.short === shortName || c.code === shortName)
+  ?? ALL_CODES.find((c) => c.short === SHORT_ALIASES[shortName])
   ?? ALL_CODES.find((c) => c.label.startsWith(shortName))
   ?? null;
 

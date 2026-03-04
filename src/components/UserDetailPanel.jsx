@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration, getCodeShort, getStaffColor, USER_STATUSES } from "../data.js";
-import { InsBadge, StBadge, StatusBadge, Section, InfoRow } from "./ui.jsx";
+import { SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, getCodeDuration, getCodeShort, getStaffColor, USER_STATUSES, CARE_LEVELS } from "../data.js";
+import { InsBadge, StBadge, StatusBadge, CareLevelBadge, Section, InfoRow } from "./ui.jsx";
 import { lbl, sty, inp } from "../styles.js";
 
 export default function UserDetailPanel({ user, visits, areas, staff, onClose, onSave, onDelete }) {
@@ -11,7 +11,7 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
     name: user.name, nameKana: user.nameKana || "", address: user.address, area: user.area,
     insuranceType: user.insuranceType, serviceCode: user.serviceCode,
     serviceLabel: user.serviceLabel, staffId: user.staffId, notes: user.notes || "",
-    status: user.status || "利用中",
+    status: user.status || "利用中", careLevel: user.careLevel || "",
   }));
   const [schedules, setSchedules] = useState(() => user.regularSchedule.map((s) => ({ ...s })));
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -57,7 +57,7 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
       name: user.name, nameKana: user.nameKana || "", address: user.address, area: user.area,
       insuranceType: user.insuranceType, serviceCode: user.serviceCode,
       serviceLabel: user.serviceLabel, staffId: user.staffId, notes: user.notes || "",
-      status: user.status || "利用中",
+      status: user.status || "利用中", careLevel: user.careLevel || "",
     });
     setSchedules(user.regularSchedule.map((s) => ({ ...s })));
     setEditing(true);
@@ -98,6 +98,10 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
                       {USER_STATUSES.map((s) => <option key={s}>{s}</option>)}
                     </select></div>
                 </div>
+                <div><label style={lbl}>介護度</label>
+                  <select value={form.careLevel} onChange={(e) => set("careLevel", e.target.value)} style={sty}>
+                    {CARE_LEVELS.map((l) => <option key={l} value={l}>{l || "未設定"}</option>)}
+                  </select></div>
               </div>
             </Section>
 
@@ -127,23 +131,24 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
                           {staff.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
                         </select>
                         <div style={{ display: "flex", gap: 2 }}>
-                          {["介護", "医療"].map((t) => (
+                          {["介護", "医療", "自費"].map((t) => (
                             <button key={t} onClick={() => {
-                              const codes = t === "介護" ? SERVICE_CODES.kaigo : SERVICE_CODES.iryo;
+                              const codes = t === "介護" ? SERVICE_CODES.kaigo : t === "医療" ? SERVICE_CODES.iryo : SERVICE_CODES.jihi;
                               const sc = codes[0];
                               setSchedules(schedules.map((ss, j) => j === i ? { ...ss, insuranceType: t, serviceCode: sc.code, serviceLabel: sc.label, duration: sc.duration } : ss));
                             }}
                               style={{
-                                padding: "3px 8px", border: `1.5px solid ${s.insuranceType === t ? (t === "医療" ? "#f59e0b" : "#3b82f6") : "#e2e8f0"}`,
+                                padding: "3px 8px", border: `1.5px solid ${s.insuranceType === t ? (t === "医療" ? "#f59e0b" : t === "自費" ? "#a855f7" : "#3b82f6") : "#e2e8f0"}`,
                                 borderRadius: 5, cursor: "pointer", fontWeight: 700, fontSize: 10,
-                                background: s.insuranceType === t ? (t === "医療" ? "#fef3c7" : "#dbeafe") : "white",
-                                color: s.insuranceType === t ? (t === "医療" ? "#92400e" : "#1e40af") : "#94a3b8",
+                                background: s.insuranceType === t ? (t === "医療" ? "#fef3c7" : t === "自費" ? "#f3e8ff" : "#dbeafe") : "white",
+                                color: s.insuranceType === t ? (t === "医療" ? "#92400e" : t === "自費" ? "#6b21a8" : "#1e40af") : "#94a3b8",
                               }}>{t}</button>
                           ))}
                         </div>
                         <select value={s.serviceCode} onChange={(e) => setSchedCode(i, e.target.value)} style={{ ...sty, flex: 2, fontSize: 10 }}>
                           <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
                           <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
+                          <optgroup label="自費">{SERVICE_CODES.jihi.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
                         </select>
                       </div>
                     </div>
@@ -200,6 +205,7 @@ export default function UserDetailPanel({ user, visits, areas, staff, onClose, o
               <InfoRow label="住所" value={user.address} full />
               <InfoRow label="担当スタッフ（デフォルト）" value={staffMember?.name || "未設定"} />
               <InfoRow label="エリア" value={user.area} />
+              <InfoRow label="介護度" value={user.careLevel || "未設定"} extra={user.careLevel && <CareLevelBadge level={user.careLevel} />} />
             </div>
           </Section>
           <Section icon="📅" title="定期訪問スケジュール" badge={`週${user.frequency}回`}>

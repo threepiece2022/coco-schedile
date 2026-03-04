@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { DEFAULT_STAFF, SERVICE_CODES, ALL_CODES, HOURS, DAYS, DAY_FULL, INITIAL_USERS, generateVisits, getCodeDuration, getCodeShort, getStaffColor, DEFAULT_AREAS } from "./data.js";
-import { InsBadge, StBadge, StatusBadge } from "./components/ui.jsx";
+import { InsBadge, StBadge, StatusBadge, CareLevelBadge } from "./components/ui.jsx";
 import { lbl, sty, navBtn } from "./styles.js";
 import UserDetailPanel from "./components/UserDetailPanel.jsx";
 import AddUserModal from "./components/AddUserModal.jsx";
@@ -12,6 +12,8 @@ import StaffManagerPanel from "./components/StaffManagerPanel.jsx";
 
 const insColor = (ins) => ins === "医療"
   ? { bg: "#fffbeb", border: "#f59e0b", text: "#92400e", left: "#d97706" }
+  : ins === "自費"
+  ? { bg: "#faf5ff", border: "#c084fc", text: "#6b21a8", left: "#a855f7" }
   : { bg: "#eff6ff", border: "#93c5fd", text: "#1e40af", left: "#3b82f6" };
 
 const fmtTime = (hour, dur) => {
@@ -66,7 +68,7 @@ export default function App() {
   const [staff, setStaff] = useState(() => loadState("coco_staff", DEFAULT_STAFF));
   const [users, setUsers] = useState(() => {
     const raw = loadState("coco_users", INITIAL_USERS);
-    return raw.map((u) => ({ ...u, nameKana: u.nameKana || "", status: u.status || "利用中" }));
+    return raw.map((u) => ({ ...u, nameKana: u.nameKana || "", status: u.status || "利用中", careLevel: u.careLevel || "" }));
   });
   const [visits, setVisits] = useState(() => loadState("coco_visits", null) || generateVisits(loadState("coco_users", INITIAL_USERS)));
   const [areas, setAreas] = useState(() => loadState("coco_areas", DEFAULT_AREAS));
@@ -328,11 +330,11 @@ export default function App() {
               ))}
             </div>
             <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-              {[["all", "全て"], ["介護", "介護"], ["医療", "医療"]].map(([k, l]) => (
+              {[["all", "全て"], ["介護", "介護"], ["医療", "医療"], ["自費", "自費"]].map(([k, l]) => (
                 <button key={k} onClick={() => setInsF(k)}
                   style={{ flex: 1, padding: "4px 0", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 10, fontWeight: 600,
-                    background: insF === k ? (k === "医療" ? "#fef3c7" : k === "介護" ? "#dbeafe" : "#e2e8f0") : "#f8fafc",
-                    color: insF === k ? (k === "医療" ? "#92400e" : k === "介護" ? "#1e40af" : "#1e293b") : "#94a3b8" }}>{l}</button>
+                    background: insF === k ? (k === "医療" ? "#fef3c7" : k === "介護" ? "#dbeafe" : k === "自費" ? "#f3e8ff" : "#e2e8f0") : "#f8fafc",
+                    color: insF === k ? (k === "医療" ? "#92400e" : k === "介護" ? "#1e40af" : k === "自費" ? "#6b21a8" : "#1e293b") : "#94a3b8" }}>{l}</button>
               ))}
             </div>
           </div>
@@ -374,6 +376,7 @@ export default function App() {
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <span style={{ fontWeight: selUser === u.id ? 700 : 400, color: "#334155" }}>{u.name}</span>
                         <InsBadge type={u.insuranceType} />
+                        {u.careLevel && <CareLevelBadge level={u.careLevel} />}
                         {u.status && u.status !== "利用中" && <StatusBadge status={u.status} />}
                       </span>
                       <span style={{ fontSize: 9, color: "#94a3b8" }}>週{u.frequency} · {getCodeShort(u.serviceCode)}</span>
@@ -569,7 +572,7 @@ export default function App() {
               <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{editV.userName}</div>
-                  <div style={{ fontSize: 10, color: "#94a3b8" }}>{editV.insuranceType === "医療" ? "医療保険" : "介護保険"} · {getCodeShort(editV.serviceCode)}</div>
+                  <div style={{ fontSize: 10, color: "#94a3b8" }}>{editV.insuranceType === "医療" ? "医療保険" : editV.insuranceType === "自費" ? "自費" : "介護保険"} · {getCodeShort(editV.serviceCode)}</div>
                 </div>
                 <button onClick={() => {
                   const u = users.find((u) => u.id === editV.userId);
@@ -590,6 +593,7 @@ export default function App() {
                   <select value={editV.serviceCode} onChange={(e) => { const sc = ALL_CODES.find((c) => c.code === e.target.value); setEditV({ ...editV, serviceCode: e.target.value, insuranceType: sc?.insurance || editV.insuranceType }); }} style={sty}>
                     <optgroup label="介護保険">{SERVICE_CODES.kaigo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
                     <optgroup label="医療保険">{SERVICE_CODES.iryo.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
+                    <optgroup label="自費">{SERVICE_CODES.jihi.map((c) => <option key={c.code} value={c.code}>{c.short} - {c.label}</option>)}</optgroup>
                   </select></div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div><label style={lbl}>訪問種別</label><select value={editV.type} onChange={(e) => setEditV({ ...editV, type: e.target.value })} style={sty}>{["訪問看護", "医療訪問看護", "リハビリ", "特別訪問", "緊急訪問"].map((t) => <option key={t}>{t}</option>)}</select></div>

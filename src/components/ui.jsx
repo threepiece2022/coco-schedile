@@ -1,13 +1,15 @@
 import React from "react";
 
 export const InsBadge = ({ type }) => {
-  const m = type === "医療";
+  const colors = type === "医療"
+    ? { bg: "#fef3c7", color: "#92400e", border: "#fcd34d" }
+    : type === "自費"
+    ? { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" }
+    : { bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" };
   return (
     <span style={{
       fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 700,
-      background: m ? "#fef3c7" : "#dbeafe",
-      color: m ? "#92400e" : "#1e40af",
-      border: `1px solid ${m ? "#fcd34d" : "#93c5fd"}`,
+      background: colors.bg, color: colors.color, border: `1px solid ${colors.border}`,
     }}>{type}</span>
   );
 };
@@ -38,6 +40,19 @@ export const StatusBadge = ({ status }) => {
       fontSize: 9, padding: "1px 5px", borderRadius: 3,
       background: c[0], color: c[1], border: `1px solid ${c[2]}`, fontWeight: 600,
     }}>{status}</span>
+  );
+};
+
+export const CareLevelBadge = ({ level }) => {
+  if (!level) return null;
+  const isShien = level.startsWith("要支援");
+  return (
+    <span style={{
+      fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 700,
+      background: isShien ? "#dcfce7" : "#fff7ed",
+      color: isShien ? "#166534" : "#9a3412",
+      border: `1px solid ${isShien ? "#86efac" : "#fdba74"}`,
+    }}>{level}</span>
   );
 };
 

@@ -100,23 +100,23 @@ export function parseStaffCsv(text) {
   return { data, errors };
 }
 
-/** 利用者・スケジュールCSV生成（新12列フォーマット、1行=1スケジュール） */
+/** 利用者・スケジュールCSV生成（13列フォーマット、1行=1スケジュール） */
 export function generateUsersCsv(usersData) {
   const header = [
-    "利用者名", "フリガナ", "住所", "エリア", "備考", "ステータス",
+    "利用者名", "フリガナ", "住所", "エリア", "備考", "ステータス", "介護度",
     "訪問曜日", "開始時間", "担当者ID", "サービスコード", "保険種別", "時間(分)",
   ];
   const lines = [header.map(csvEscape).join(",")];
   for (const u of usersData) {
     if (!u.regularSchedule || u.regularSchedule.length === 0) {
       lines.push([
-        u.name, u.nameKana || "", u.address, u.area, u.notes || "", u.status || "利用中",
+        u.name, u.nameKana || "", u.address, u.area, u.notes || "", u.status || "利用中", u.careLevel || "",
         "", "", "", "", "", "",
       ].map(csvEscape).join(","));
     } else {
       for (const s of u.regularSchedule) {
         lines.push([
-          u.name, u.nameKana || "", u.address, u.area, u.notes || "", u.status || "利用中",
+          u.name, u.nameKana || "", u.address, u.area, u.notes || "", u.status || "利用中", u.careLevel || "",
           DAYS[s.day], s.hour, s.staffId,
           getCodeShort(s.serviceCode),
           s.insuranceType, Math.round(s.duration * 60),
@@ -127,13 +127,13 @@ export function generateUsersCsv(usersData) {
   return lines.join("\n");
 }
 
-/** 利用者CSVをパースしバリデーション（新12列フォーマット） */
+/** 利用者CSVをパースしバリデーション（13列フォーマット） */
 export function parseUsersCsv(text, validAreas, staff) {
   const { headers, rows } = parseCsv(text);
   if (rows.length === 0) return { data: [], errors: [{ row: 0, message: "データ行がありません" }] };
 
   if (!validAreas) validAreas = ["柏エリア", "高塚エリア", "松戸エリア"];
-  const validIns = ["介護", "医療"];
+  const validIns = ["介護", "医療", "自費"];
   const validStaffIds = new Set((staff || []).map((s) => s.id));
   const validDays = new Set(DAYS);
 
@@ -151,12 +151,13 @@ export function parseUsersCsv(text, validAreas, staff) {
     const area = get(3);
     const notes = get(4);
     const status = get(5);
-    const visitDay = get(6);
-    const startHour = get(7) ? parseFloat(get(7)) : null;
-    const staffId = get(8) ? parseInt(get(8), 10) : null;
-    const serviceCodeRaw = get(9);
-    const ins = get(10);
-    const durationMin = get(11) ? parseFloat(get(11)) : null;
+    const careLevel = get(6);
+    const visitDay = get(7);
+    const startHour = get(8) ? parseFloat(get(8)) : null;
+    const staffId = get(9) ? parseInt(get(9), 10) : null;
+    const serviceCodeRaw = get(10);
+    const ins = get(11);
+    const durationMin = get(12) ? parseFloat(get(12)) : null;
 
     // 利用者フィールドのバリデーション
     if (!name) rowErrors.push("利用者名が空です");
@@ -216,6 +217,7 @@ export function parseUsersCsv(text, validAreas, staff) {
         area: area || "柏エリア",
         notes: notes || "",
         status: status || "利用中",
+        careLevel: careLevel || "",
         insuranceType: "",
         serviceCode: "",
         serviceLabel: "",
