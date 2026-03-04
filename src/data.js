@@ -21,15 +21,15 @@ export const SERVICE_CODES = {
     { code: "1312", short: "訪看Ⅰ2", label: "訪看Ⅰ2（30分未満）", insurance: "介護", duration: 0.5 },
     { code: "1313", short: "訪看Ⅰ3", label: "訪看Ⅰ3（30分〜1時間未満）", insurance: "介護", duration: 1 },
     { code: "1314", short: "訪看Ⅰ4", label: "訪看Ⅰ4（1時間〜1時間半未満）", insurance: "介護", duration: 1.5 },
-    { code: "1315", short: "Ⅰ5", label: "訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
-    { code: "1316", short: "Ⅰ5-2", label: "訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
-    { code: "1317", short: "Ⅰ5-2超", label: "訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
+    { code: "1315", short: "訪看Ⅰ5", label: "訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
+    { code: "1316", short: "訪看Ⅰ5-2", label: "訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
+    { code: "1317", short: "訪看Ⅰ5-2超", label: "訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
     { code: "1411", short: "予防Ⅰ1", label: "予防訪看Ⅰ1（20分未満）", insurance: "介護", duration: 0.5 },
     { code: "1412", short: "予防Ⅰ2", label: "予防訪看Ⅰ2（30分未満）", insurance: "介護", duration: 0.5 },
     { code: "1413", short: "予防Ⅰ3", label: "予防訪看Ⅰ3（30分〜1時間未満）", insurance: "介護", duration: 1 },
-    { code: "1414", short: "予防Ⅰ5", label: "予防訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
-    { code: "1415", short: "予防Ⅰ5-2", label: "予防訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
-    { code: "1416", short: "予防Ⅰ5-2超", label: "予防訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
+    { code: "1414", short: "予防訪看Ⅰ5", label: "予防訪看Ⅰ5（理学療法士等・20分）", insurance: "介護", duration: 0.5 },
+    { code: "1415", short: "予防訪看Ⅰ5-2", label: "予防訪看Ⅰ5-2（理学療法士等・40分）", insurance: "介護", duration: 2/3 },
+    { code: "1416", short: "予防訪看Ⅰ5-2超", label: "予防訪看Ⅰ5-2超（理学療法士等・60分）", insurance: "介護", duration: 1.5 },
   ],
   iryo: [
     { code: "C005", short: "基本療養費Ⅰ", label: "訪問看護基本療養費(Ⅰ)", insurance: "医療", duration: 1.5 },
@@ -51,8 +51,11 @@ export const getCodeDuration = (code) => ALL_CODES.find((c) => c.code === code)?
 /** サービスコードから短縮表示名を取得 */
 export const getCodeShort = (code) => ALL_CODES.find((c) => c.code === code)?.short ?? code;
 
-/** 短縮名またはコード番号からサービスコード情報を取得 */
-export const getCodeByShort = (shortName) => ALL_CODES.find((c) => c.short === shortName || c.code === shortName) ?? null;
+/** 短縮名またはコード番号からサービスコード情報を取得（ラベル前方一致にもフォールバック） */
+export const getCodeByShort = (shortName) =>
+  ALL_CODES.find((c) => c.short === shortName || c.code === shortName)
+  ?? ALL_CODES.find((c) => c.label.startsWith(shortName))
+  ?? null;
 
 export const HOURS = Array.from({ length: 10 }, (_, i) => i + 8); // 8:00-17:00
 export const DAYS = ["月", "火", "水", "木", "金", "土", "日"];
